@@ -1,0 +1,10 @@
+﻿{
+  "profiles": {
+    "HomeHub.BackgroundServices": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
