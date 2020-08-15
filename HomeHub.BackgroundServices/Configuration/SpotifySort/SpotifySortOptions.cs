@@ -9,5 +9,6 @@ namespace HomeHub.BackgroundServices.Configuration.SpotifySort
         /// Interval in ms.
         /// </summary>
         public int Interval { get; set; }
+        public SpotifyAuthentication SpotifyAuthentication { get; set; }
     }
 }
