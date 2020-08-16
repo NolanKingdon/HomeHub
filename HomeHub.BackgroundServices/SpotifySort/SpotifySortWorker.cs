@@ -1,10 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using HomeHub.BackgroundServices.Configuration.SpotifySort;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -18,6 +16,7 @@ namespace HomeHub.BackgroundServices
         private readonly SpotifyAuthentication authOptions;
         private readonly ISpotifySort sorter;
         private readonly SemaphoreSlim semaphore;
+        private readonly string localIp;
         public SpotifySortWorker(ILogger<SpotifySortWorker> logger,
                                  IOptions<SpotifySortOptions> sortOptions,
                                  IOptions<SpotifyAuthentication> authOptions,
@@ -27,6 +26,7 @@ namespace HomeHub.BackgroundServices
             this.sortOptions = sortOptions.Value;
             this.authOptions = authOptions.Value;
             this.sorter = sorter;
+            this.localIp = Dns.GetHostEntry(Dns.GetHostName()).AddressList[3].ToString();
             this.semaphore = new SemaphoreSlim(1, 1);
         }
 
@@ -58,8 +58,14 @@ namespace HomeHub.BackgroundServices
             {
                 await sorter.AuthenticateUserAsync(authOptions.ClientId,
                                                    authOptions.ClientSecret,
+                                                   localIp,
                                                    semaphore,
                                                    cancellationToken);
+            }
+            else
+            {
+                logger.LogInformation("Already authenticated");
+                semaphore.Release();
             }
             // Figure out multiple semaphore situation.
             // Figure out how to send the URL via Email? Api call? SSH visible?

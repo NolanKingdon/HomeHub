@@ -1,6 +1,4 @@
-using System.IO;
 using HomeHub.BackgroundServices.Configuration.SpotifySort;
-using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

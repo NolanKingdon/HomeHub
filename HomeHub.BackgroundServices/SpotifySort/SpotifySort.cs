@@ -21,6 +21,7 @@ namespace HomeHub.BackgroundServices
 
         public async Task AuthenticateUserAsync(string clientId,
                                                 string clientSecret,
+                                                string localIp,
                                                 SemaphoreSlim semaphore,
                                                 CancellationToken cancellationToken)
         {
@@ -36,8 +37,8 @@ namespace HomeHub.BackgroundServices
             SpotifyAuthorizationCodeAuth auth = new SpotifyAuthorizationCodeAuth(
                 clientId,
                 clientSecret,
-                "http://localhost:4002",
-                "http://localhost:4002",
+                $"http://{localIp}:4002",
+                $"http://{localIp}:4002",
                 scopes
             );
 
@@ -61,6 +62,9 @@ namespace HomeHub.BackgroundServices
             auth.Start();
 
             var authString = auth.CreateUri();
+
+            logger.LogInformation($"Please visit this link to authenticate: {authString}");
+            // auth.OpenBrowser();
 
             cancellationToken.ThrowIfCancellationRequested();
         }
