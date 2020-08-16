@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using HomeHub.BackgroundServices.Configuration.SpotifySort;
@@ -12,6 +13,7 @@ namespace HomeHub.BackgroundServices
     {
         private readonly ILogger<SpotifySort> logger;
         private SpotifyWebAPI api;
+        private PrivateProfile user;
         public bool IsAuthenticated { get; set; }
         public SpotifyAuthorizationCodeAuth Auth { get; set; }
         public string RefreshToken { get; set; }
@@ -29,6 +31,7 @@ namespace HomeHub.BackgroundServices
                                                 CancellationToken cancellationToken)
         {
             await semaphore.WaitAsync();
+            cancellationToken.ThrowIfCancellationRequested();
             logger.LogInformation("Starting authentication process.");
 
             Scope[] scopes = new Scope[]{
@@ -72,31 +75,50 @@ namespace HomeHub.BackgroundServices
             var authString = Auth.CreateUri();
 
             logger.LogInformation($"Please visit this link to authenticate: {authString}");
-
-            cancellationToken.ThrowIfCancellationRequested();
         }
 
         public async Task RunSortAsync(SemaphoreSlim semaphore, CancellationToken cancellationToken)
         {
             await semaphore.WaitAsync();
+            cancellationToken.ThrowIfCancellationRequested();
 
-            var playlists = await GetUserPlaylistsAsync(semaphore, cancellationToken);
+            // Stores the ID/Description association.
+            Dictionary<string, string> playlistDescriptions = new Dictionary<string, string>();
 
-            foreach (var list in playlists.Items)
+            // Stores the PlaylistID/SongID relation for the multi call back to the API.
+
+            /**
+            * The idea here is to be able to use a multicall to spotify to add all the new songs to the
+            * Playlists, and in the same vein be able to conglomerate a big ol' list for "unlike songs" call.
+            * One of the issues the node version had was that spotify couldn't handle the volume of the
+            * Remove requests, we got duplicates and glitches in unliking songs.
+            * This should let us only iterate through the liked songs once as well.
+            */
+            Dictionary<string, string[]> playlistNewSongs = new Dictionary<string, string[]>();
+
+            // TODO -> Add these calls to an Task list and await them all before continuing.
+            var playlists = await GetUserPlaylistsAsync(cancellationToken);
+            var likedSongs = await GetUserLikedTracksAsync(cancellationToken);
+
+            // Creating the association between the playlist ID and description
+            foreach(var playlist in playlists.Items)
             {
-                logger.LogInformation(list.Id);
+                playlistDescriptions[playlist.Id] = await GetPlaylistDescriptionsAsync(playlist.Id, cancellationToken);
             }
+
+            // Add the songs to the relevant playlists,
 
             semaphore.Release();
         }
 
-        public async Task<Paging<SimplePlaylist>> GetUserPlaylistsAsync(SemaphoreSlim semaphore, CancellationToken cancellationToken)
+        private async Task<Paging<SimplePlaylist>> GetUserPlaylistsAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            PrivateProfile user = await GetUserAsync(cancellationToken);
+            user ??= await GetUserAsync(cancellationToken);
             string userId = user.Id;
-            Paging<SimplePlaylist> playlists = await api.GetUserPlaylistsAsync(userId, 50);
+            logger.LogInformation($"Getting playlists from {userId}.");
+            Paging<SimplePlaylist> playlists = await api.GetUserPlaylistsAsync(userId, 100);
 
             return playlists;
         }
@@ -104,8 +126,26 @@ namespace HomeHub.BackgroundServices
         private async Task<PrivateProfile> GetUserAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            logger.LogInformation($"Requesting user's Private profile.");
             PrivateProfile profile = await api.GetPrivateProfileAsync();
             return profile;
+        }
+
+        private async Task<Paging<SavedTrack>> GetUserLikedTracksAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            logger.LogInformation($"Getting {user.Id ?? "User"}'s Liked tracks.");
+            Paging<SavedTrack> tracks = await api.GetSavedTracksAsync(100);
+            return tracks;
+        }
+
+        private async Task<string> GetPlaylistDescriptionsAsync(string playlist,
+                                                                CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            logger.LogInformation($"Getting Playlist description for playlistID: {playlist}");
+            FullPlaylist fullPlaylist = await api.GetPlaylistAsync(playlist, "", "");
+            return fullPlaylist.Description;
         }
     }
 }
