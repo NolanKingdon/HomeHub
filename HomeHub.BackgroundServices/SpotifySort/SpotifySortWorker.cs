@@ -39,7 +39,18 @@ namespace HomeHub.BackgroundServices
                 if(semaphore.CurrentCount == 1)
                 {
                     logger.LogInformation("Running SpotifySortWorker - {time}", DateTimeOffset.Now);
-                    await RunSorterAsync(cancellationToken);
+                    try
+                    {
+                        await RunSorterAsync(cancellationToken);
+                    }
+                    catch(OperationCanceledException)
+                    {
+                        logger.LogError("SpotifySort cancellation received. Disposing of worker.");
+                    }
+                    catch(Exception e)
+                    {
+                        logger.LogCritical($"Unexpected Error when Running SpotifySort background service:\n{e}");
+                    }
                 }
                 else
                 {
@@ -50,25 +61,31 @@ namespace HomeHub.BackgroundServices
 
         private async Task RunSorterAsync(CancellationToken cancellationToken)
         {
-            // Note -> Because we only have one at a time, this is probably redundant.
-            await semaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
 
             if (!sorter.IsAuthenticated)
             {
+                logger.LogInformation("Running authentication process.");
                 await sorter.AuthenticateUserAsync(authOptions.ClientId,
                                                    authOptions.ClientSecret,
                                                    localIp,
                                                    semaphore,
                                                    cancellationToken);
+                await sorter.RunSortAsync(semaphore, cancellationToken);
             }
             else
             {
-                logger.LogInformation("Already authenticated");
-                semaphore.Release();
+                if(sorter.Token.IsExpired())
+                {
+                    logger.LogInformation("Refreshing authentication token.");
+                    await sorter.Auth.RefreshToken(sorter.RefreshToken);
+                }
+
+                await sorter.RunSortAsync(semaphore, cancellationToken);
             }
-            // Figure out multiple semaphore situation.
-            // Figure out how to send the URL via Email? Api call? SSH visible?
+
+            // TODO -> Error handling and request re-attempts w/ Polly.
+            logger.LogInformation("Sort successful!");
         }
     }
 }

@@ -10,9 +10,12 @@ namespace HomeHub.BackgroundServices
 {
     public class SpotifySort : ISpotifySort
     {
-        readonly ILogger<SpotifySort> logger;
-        public bool IsAuthenticated { get; set; }
+        private readonly ILogger<SpotifySort> logger;
         private SpotifyWebAPI api;
+        public bool IsAuthenticated { get; set; }
+        public SpotifyAuthorizationCodeAuth Auth { get; set; }
+        public string RefreshToken { get; set; }
+        public Token Token { get; set; }
 
         public SpotifySort(ILogger<SpotifySort> logger)
         {
@@ -25,7 +28,9 @@ namespace HomeHub.BackgroundServices
                                                 SemaphoreSlim semaphore,
                                                 CancellationToken cancellationToken)
         {
+            await semaphore.WaitAsync();
             logger.LogInformation("Starting authentication process.");
+
             Scope[] scopes = new Scope[]{
                 Scope.UserLibraryModify,
                 Scope.UserReadPrivate,
@@ -34,7 +39,8 @@ namespace HomeHub.BackgroundServices
                 Scope.PlaylistModifyPublic
             };
 
-            SpotifyAuthorizationCodeAuth auth = new SpotifyAuthorizationCodeAuth(
+            // Wrapper class for AuthorizationCodeAuth - Works better with inability to open a browser on pi.
+            Auth = new SpotifyAuthorizationCodeAuth(
                 clientId,
                 clientSecret,
                 $"http://{localIp}:4002",
@@ -42,16 +48,18 @@ namespace HomeHub.BackgroundServices
                 scopes
             );
 
-            auth.AuthReceived += async (sender, payload) =>
+            Auth.AuthReceived += async (sender, payload) =>
             {
                 logger.LogInformation("Authentication received. Creating api object.");
-                auth.Stop();
+                Auth.Stop();
 
-                Token token = await auth.ExchangeCode(payload.Code);
+                Token = await Auth.ExchangeCode(payload.Code);
+                var refreshToken = Token.RefreshToken;
+
                 api = new SpotifyWebAPI()
                 {
-                    TokenType = token.TokenType,
-                    AccessToken = token.AccessToken
+                    TokenType = Token.TokenType,
+                    AccessToken = Token.AccessToken
                 };
 
                 IsAuthenticated = true;
@@ -59,14 +67,45 @@ namespace HomeHub.BackgroundServices
                 semaphore.Release();
             };
 
-            auth.Start();
+            Auth.Start();
 
-            var authString = auth.CreateUri();
+            var authString = Auth.CreateUri();
 
             logger.LogInformation($"Please visit this link to authenticate: {authString}");
-            // auth.OpenBrowser();
 
             cancellationToken.ThrowIfCancellationRequested();
+        }
+
+        public async Task RunSortAsync(SemaphoreSlim semaphore, CancellationToken cancellationToken)
+        {
+            await semaphore.WaitAsync();
+
+            var playlists = await GetUserPlaylistsAsync(semaphore, cancellationToken);
+
+            foreach (var list in playlists.Items)
+            {
+                logger.LogInformation(list.Id);
+            }
+
+            semaphore.Release();
+        }
+
+        public async Task<Paging<SimplePlaylist>> GetUserPlaylistsAsync(SemaphoreSlim semaphore, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            PrivateProfile user = await GetUserAsync(cancellationToken);
+            string userId = user.Id;
+            Paging<SimplePlaylist> playlists = await api.GetUserPlaylistsAsync(userId, 50);
+
+            return playlists;
+        }
+
+        private async Task<PrivateProfile> GetUserAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            PrivateProfile profile = await api.GetPrivateProfileAsync();
+            return profile;
         }
     }
 }
