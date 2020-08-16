@@ -48,40 +48,5 @@ namespace HomeHub.BackgroundServices
 
             return hostBuilder;
         }
-        // var hostBuilder = new HostBuilder();
-        // var workingDirectory = Directory.GetCurrentDirectory();
-
-        // hostBuilder.UseContentRoot(workingDirectory)
-        //            .ConfigureHostConfiguration(configBuilder => configBuilder.SetBasePath(workingDirectory))
-        //            .ConfigureAppConfiguration((hostContext, configBuilder) =>
-        //            {
-        //                // Use secrets template to build your own secrets.json.
-        //                configBuilder.AddJsonFile("./secrets.json", optional: false, reloadOnChange: true);
-        //            })
-        //            .ConfigureServices((hostContext, services) => 
-        //            {
-        //                 // TODO -> As number of Services grows, hide these away in extension methods.
-        //                 services.AddHostedService<SpotifySortWorker>()
-        //                         .AddOptions<SpotifySortOptions>()
-        //                         .Bind(hostContext.Configuration.GetSection(nameof(SpotifySortOptions)));
-
-        //                 services.AddOptions<SpotifyAuthentication>("./Configuration/secrets.json")
-        //                         .Bind(hostContext.Configuration.GetSection("SpotifySortOptions:SpotifyAuthentication"));
-
-        //                 services.AddSingleton<ISpotifySort, SpotifySort>();
-        //            });
-            // Host.CreateDefaultBuilder(args)
-            //     .ConfigureServices((hostContext, services) =>
-            //     {
-            //         // TODO -> As number of Services grows, hide these away in extension methods.
-            //         services.AddHostedService<SpotifySortWorker>()
-            //                 .AddOptions<SpotifySortOptions>()
-            //                 .Bind(hostContext.Configuration.GetSection(nameof(SpotifySortOptions)));
-
-            //         services.AddOptions<SpotifyAuthentication>("./Configuration/secrets.json")
-            //                 .Bind(hostContext.Configuration.GetSection("SpotifySortOptions:SpotifyAuthentication"));
-                            
-            //         services.AddSingleton<ISpotifySort, SpotifySort>();
-            //     });
     }
 }
