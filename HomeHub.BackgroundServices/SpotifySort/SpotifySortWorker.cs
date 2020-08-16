@@ -17,27 +17,52 @@ namespace HomeHub.BackgroundServices
         private readonly SpotifySortOptions sortOptions;
         private readonly SpotifyAuthentication authOptions;
         private readonly ISpotifySort sorter;
+        private readonly SemaphoreSlim semaphore;
         public SpotifySortWorker(ILogger<SpotifySortWorker> logger,
                                  IOptions<SpotifySortOptions> sortOptions,
                                  IOptions<SpotifyAuthentication> authOptions,
-                                 ISpotifySort sorter,
-                                 IConfiguration config)
+                                 ISpotifySort sorter)
         {
             this.logger = logger;
             this.sortOptions = sortOptions.Value;
             this.authOptions = authOptions.Value;
             this.sorter = sorter;
+            this.semaphore = new SemaphoreSlim(1, 1);
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                logger.LogInformation($"Options: {sortOptions}");
-                logger.LogInformation($"Options.SpotifyAuth: {sortOptions.SpotifyAuthentication}");
-                logger.LogInformation("SpotifySortWorker running at: {time}", DateTimeOffset.Now);
                 await Task.Delay(sortOptions.Interval, cancellationToken);
+
+                if(semaphore.CurrentCount == 1)
+                {
+                    logger.LogInformation("Running SpotifySortWorker - {time}", DateTimeOffset.Now);
+                    await RunSorterAsync(cancellationToken);
+                }
+                else
+                {
+                    logger.LogInformation("Previous task did not complete.");
+                }
             }
+        }
+
+        private async Task RunSorterAsync(CancellationToken cancellationToken)
+        {
+            // Note -> Because we only have one at a time, this is probably redundant.
+            await semaphore.WaitAsync();
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!sorter.IsAuthenticated)
+            {
+                await sorter.AuthenticateUserAsync(authOptions.ClientId,
+                                                   authOptions.ClientSecret,
+                                                   semaphore,
+                                                   cancellationToken);
+            }
+            // Figure out multiple semaphore situation.
+            // Figure out how to send the URL via Email? Api call? SSH visible?
         }
     }
 }
