@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using HomeHub.BackgroundServices.Configuration.SpotifySort;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Enums;
 using SpotifyAPI.Web.Models;
@@ -13,25 +14,31 @@ namespace HomeHub.BackgroundServices
     public class SpotifySort : ISpotifySort
     {
         private readonly ILogger<SpotifySort> logger;
-        private SpotifyWebAPI api;
+        private readonly SpotifySortOptions options;
+        private readonly IApi api;
         private PrivateProfile user;
         public bool IsAuthenticated { get; set; }
         public SpotifyAuthorizationCodeAuth Auth { get; set; }
         public string RefreshToken { get; set; }
         public Token Token { get; set; }
 
-        public SpotifySort(ILogger<SpotifySort> logger)
+        public SemaphoreSlim RequestSemaphore { get; }
+
+        public SpotifySort(ILogger<SpotifySort> logger, IOptions<SpotifySortOptions> options, IApi api)
         {
             this.logger = logger;
+            this.options = options.Value;
+            this.api = api;
+            RequestSemaphore = new SemaphoreSlim(this.options.MaxConcurrentThreads, this.options.MaxConcurrentThreads);
         }
 
         public async Task AuthenticateUserAsync(string clientId,
                                                 string clientSecret,
                                                 string localIp,
-                                                SemaphoreSlim semaphore,
+                                                SemaphoreSlim mainTaskSemaphore,
                                                 CancellationToken cancellationToken)
         {
-            await semaphore.WaitAsync();
+            await mainTaskSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
             logger.LogInformation("Starting authentication process.");
 
@@ -52,6 +59,7 @@ namespace HomeHub.BackgroundServices
                 scopes
             );
 
+            // Delegate for when the endpoint has been accessed/approved by user.
             Auth.AuthReceived += async (sender, payload) =>
             {
                 logger.LogInformation("Authentication received. Creating api object.");
@@ -60,18 +68,15 @@ namespace HomeHub.BackgroundServices
                 Token = await Auth.ExchangeCode(payload.Code);
                 var refreshToken = Token.RefreshToken;
 
-                api = new SpotifyWebAPI()
-                {
-                    TokenType = Token.TokenType,
-                    AccessToken = Token.AccessToken
-                };
+                api.GenerateApi(Token.TokenType, Token.AccessToken);
 
                 // Denotes that we can refresh the token in the future.
                 IsAuthenticated = true;
 
-                semaphore.Release();
+                mainTaskSemaphore.Release();
             };
 
+            // Starts to listen using the auth endpoint.
             Auth.Start();
 
             var authString = Auth.CreateUri();
@@ -79,9 +84,9 @@ namespace HomeHub.BackgroundServices
             logger.LogInformation($"Please visit this link to authenticate: {authString}");
         }
 
-        public async Task RunSortAsync(SemaphoreSlim semaphore, CancellationToken cancellationToken)
+        public async Task RunSortAsync(SemaphoreSlim mainTaskSemaphore, CancellationToken cancellationToken)
         {
-            await semaphore.WaitAsync();
+            await mainTaskSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
 
             // Stores the ID/Description association.
@@ -89,9 +94,9 @@ namespace HomeHub.BackgroundServices
 
             // Stores the PlaylistID/SongID relation for the multi call back to the API.
             Dictionary<string, List<string>> playlistNewSongs = new Dictionary<string, List<string>>();
+            List<Task> tasks = new List<Task>();
             var playlists = GetUserPlaylistsAsync(cancellationToken);
             var likedSongs = GetUserLikedTracksAsync(cancellationToken);
-            List<Task> tasks = new List<Task>();
 
             await Task.WhenAll(new Task[] { playlists, likedSongs });
 
@@ -107,6 +112,10 @@ namespace HomeHub.BackgroundServices
                     playlistNewSongs[playlist.Id] = new List<string>();
                 }));
             }
+
+            // Making sure that the playlists are fully received before trying to sort into them.
+            await Task.WhenAll(tasks);
+            tasks.Clear();
 
             // Leveraging implicit conversion in this iteration to save on iterations elsewhere.
             foreach(SavedTrackWithGenre song in likedSongs.Result.Items)
@@ -125,38 +134,45 @@ namespace HomeHub.BackgroundServices
             }
 
             await Task.WhenAll(tasks);
+            tasks.Clear();
 
             // Multicall for adding to playlists/removing from liked.
             await MoveNewSongsIntoPlaylistsAsync(playlistNewSongs, cancellationToken);
 
-            semaphore.Release();
+            mainTaskSemaphore.Release();
         }
 
         private async Task<Paging<SimplePlaylist>> GetUserPlaylistsAsync(CancellationToken cancellationToken)
         {
+            await RequestSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
 
             user ??= await GetUserAsync(cancellationToken);
             string userId = user.Id;
             logger.LogInformation($"Getting playlists from {userId}.");
-            Paging<SimplePlaylist> playlists = await api.GetUserPlaylistsAsync(userId, 100);
+            Paging<SimplePlaylist> playlists = await api.GetUserPlaylistsAsync(userId, options.MaxPlaylistResults);
+            RequestSemaphore.Release();
             return playlists;
         }
 
         private async Task<PrivateProfile> GetUserAsync(CancellationToken cancellationToken)
         {
+            await RequestSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
-                logger.LogInformation($"Requesting {user?.Id ?? "user"}'s Private profile.");
+            logger.LogInformation($"Requesting {user?.Id ?? "user"}'s Private profile.");
             PrivateProfile profile = await api.GetPrivateProfileAsync();
+            RequestSemaphore.Release();
             return profile;
         }
 
         private async Task<Paging<SavedTrack>> GetUserLikedTracksAsync(CancellationToken cancellationToken)
         {
+            await RequestSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
             logger.LogInformation($"Getting {user?.Id ?? "User"}'s Liked tracks.");
-            Paging<SavedTrack> tracks = await api.GetSavedTracksAsync(100);
+            Paging<SavedTrack> tracks = await api.GetSavedTracksAsync(options.MaxSongResults);
             cancellationToken.ThrowIfCancellationRequested();
+            RequestSemaphore.Release();
             return tracks;
         }
 
@@ -164,9 +180,11 @@ namespace HomeHub.BackgroundServices
             string playlist,
             CancellationToken cancellationToken)
         {
+            await RequestSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
             logger.LogInformation($"Getting Playlist description for playlistID: {playlist}");
-            FullPlaylist fullPlaylist = await api.GetPlaylistAsync(playlist, "", "");
+            FullPlaylist fullPlaylist = await api.GetPlaylistAsync(playlist);
+            RequestSemaphore.Release();
             return fullPlaylist.Description;
         }
 
@@ -174,6 +192,9 @@ namespace HomeHub.BackgroundServices
             SavedTrackWithGenre genreTrack,
             CancellationToken cancellationToken)
         {
+            await RequestSemaphore.WaitAsync();
+            cancellationToken.ThrowIfCancellationRequested();
+
             foreach(var artist in genreTrack.Track.Artists)
             {
                 // Could async this too if performance is really taking a hit, but it probably isn't necessary.
@@ -183,6 +204,7 @@ namespace HomeHub.BackgroundServices
             }
 
             cancellationToken.ThrowIfCancellationRequested();
+            RequestSemaphore.Release();
             return genreTrack;
         }
 
@@ -192,6 +214,7 @@ namespace HomeHub.BackgroundServices
             Dictionary<string, List<string>> newSongsDict,
             CancellationToken cancellationToken)
         {
+            await RequestSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
             logger.LogInformation($"Adding {genreTrack.Track.Name} to genreList");
 
@@ -206,26 +229,30 @@ namespace HomeHub.BackgroundServices
                     }
                 }
             }
+
+            RequestSemaphore.Release();
         }
     
         private async Task MoveNewSongsIntoPlaylistsAsync(
             Dictionary<string, List<string>> newPlaylistSongsDict,
             CancellationToken cancellationToken)
         {
+            await RequestSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
-            List<Task> tasks = new List<Task>();
-            List<string> unlikeList = new List<string>();
+            // List<Task> tasks = new List<Task>();
+            // List<string> unlikeList = new List<string>();
 
             foreach(KeyValuePair<string, List<string>> entry in newPlaylistSongsDict)
             {
                 logger.LogInformation($"Moving tracks to playlist: {entry.Key}");
-                tasks.Add(api.AddPlaylistTracksAsync(entry.Key, entry.Value));
-                unlikeList = unlikeList.Concat(entry.Value).ToList();
+                // tasks.Add(api.AddPlaylistTracksAsync(entry.Key, entry.Value));
+                // unlikeList = unlikeList.Concat(entry.Value).ToList();
             }
 
-            await Task.WhenAll(tasks);
+            // await Task.WhenAll(tasks);
             logger.LogInformation("Unliking moved songs.");
-            await api.RemoveSavedTracksAsync(unlikeList);
+            // await api.RemoveSavedTracksAsync(unlikeList);
+            RequestSemaphore.Release();
         }
     }
 }

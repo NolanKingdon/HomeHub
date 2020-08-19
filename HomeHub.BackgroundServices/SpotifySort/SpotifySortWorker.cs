@@ -46,10 +46,14 @@ namespace HomeHub.BackgroundServices
                     catch(OperationCanceledException)
                     {
                         logger.LogError("SpotifySort cancellation received. Disposing of worker.");
+                        semaphore.Release();
                     }
                     catch(Exception e)
                     {
                         logger.LogCritical($"Unexpected Error when Running SpotifySort background service:\n{e}");
+
+                        // Clearing up the semaphore for a future attempt.
+                        semaphore.Release();
                     }
                 }
                 else
