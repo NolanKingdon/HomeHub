@@ -42,6 +42,7 @@ namespace HomeHub.BackgroundServices
                             .Bind(hostContext.Configuration.GetSection(nameof(SpotifyAuthentication)));
 
                     services.AddSingleton<ISpotifySort, SpotifySort>();
+                    services.AddSingleton<IApi, ApiWrapper>();
                 });
 
             return hostBuilder;
