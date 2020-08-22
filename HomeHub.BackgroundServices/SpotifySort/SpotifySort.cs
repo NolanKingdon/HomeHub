@@ -239,19 +239,19 @@ namespace HomeHub.BackgroundServices
         {
             await RequestSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
-            // List<Task> tasks = new List<Task>();
-            // List<string> unlikeList = new List<string>();
+            List<Task> tasks = new List<Task>();
+            List<string> unlikeList = new List<string>();
 
             foreach(KeyValuePair<string, List<string>> entry in newPlaylistSongsDict)
             {
                 logger.LogInformation($"Moving tracks to playlist: {entry.Key}");
-                // tasks.Add(api.AddPlaylistTracksAsync(entry.Key, entry.Value));
-                // unlikeList = unlikeList.Concat(entry.Value).ToList();
+                tasks.Add(api.AddPlaylistTracksAsync(entry.Key, entry.Value));
+                unlikeList = unlikeList.Concat(entry.Value).ToList();
             }
 
-            // await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks);
             logger.LogInformation("Unliking moved songs.");
-            // await api.RemoveSavedTracksAsync(unlikeList);
+            await api.RemoveSavedTracksAsync(unlikeList);
             RequestSemaphore.Release();
         }
     }
