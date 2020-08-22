@@ -1,2 +1,7 @@
+# Config
 obj/
 bin/
+.vsCode/
+
+# Tokens
+secrets.json
