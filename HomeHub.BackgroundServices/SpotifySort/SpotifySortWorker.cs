@@ -3,6 +3,8 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using HomeHub.BackgroundServices.Configuration.SpotifySort;
+using HomeHub.BackgroundServices.Database;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,10 +19,13 @@ namespace HomeHub.BackgroundServices
         private readonly ISpotifySort sorter;
         private readonly SemaphoreSlim semaphore;
         private readonly string localIp;
+        private readonly IServiceScopeFactory scopeFactory;
+
         public SpotifySortWorker(ILogger<SpotifySortWorker> logger,
                                  IOptions<SpotifySortOptions> sortOptions,
                                  IOptions<SpotifyAuthentication> authOptions,
-                                 ISpotifySort sorter)
+                                 ISpotifySort sorter,
+                                 IServiceScopeFactory scopeFactory)
         {
             this.logger = logger;
             this.sortOptions = sortOptions.Value;
@@ -28,6 +33,7 @@ namespace HomeHub.BackgroundServices
             this.sorter = sorter;
             this.localIp = Dns.GetHostEntry(Dns.GetHostName()).AddressList[3].ToString();
             this.semaphore = new SemaphoreSlim(1, 1);
+            this.scopeFactory = scopeFactory;
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -82,7 +88,19 @@ namespace HomeHub.BackgroundServices
                 if(sorter.Token.IsExpired())
                 {
                     logger.LogInformation("Refreshing authentication token.");
-                    await sorter.Auth.RefreshToken(sorter.RefreshToken);
+                    var newToken = await sorter.Auth.RefreshToken(sorter.RefreshToken);
+
+                    using (var scope = scopeFactory.CreateScope())
+                    {
+                        var context = scope.ServiceProvider.GetService<ISpotifyContext>();
+                        // Keeping it simple and only keeping one token at a time.
+                        foreach (var token in context.Tokens)
+                        {
+                            context.Tokens.Remove(token);
+                        }
+                        context.Tokens.Add(newToken);
+                        context.SaveChanges();
+                    }
                 }
 
                 await sorter.RunSortAsync(semaphore, cancellationToken);

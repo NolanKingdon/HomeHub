@@ -1,4 +1,5 @@
 using HomeHub.BackgroundServices.Configuration.SpotifySort;
+using HomeHub.BackgroundServices.Database;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -33,6 +34,8 @@ namespace HomeHub.BackgroundServices
                 })
                 .ConfigureServices((hostContext, services) =>
                 {
+                    services.AddDbContext<ISpotifyContext, SpotifyContext>();
+                    
                     // TODO -> As number of Services grows, hide these away in extension methods.
                     services.AddHostedService<SpotifySortWorker>()
                             .AddOptions<SpotifySortOptions>()
