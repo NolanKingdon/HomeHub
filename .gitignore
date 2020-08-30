@@ -2,6 +2,7 @@
 obj/
 bin/
 .vsCode/
+.vs/
 
 # Tokens
 secrets.json
