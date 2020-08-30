@@ -1,3 +1,4 @@
+using System;
 using SpotifyAPI.Web.Models;
 
 namespace HomeHub.BackgroundServices.Models
@@ -9,6 +10,9 @@ namespace HomeHub.BackgroundServices.Models
         public string RefreshToken { get; set; }
         public string TokenType { get; set; }
         public string Error { get; set; }
+        public double ExpiresIn { get; set; }
+        public string ErrorDescription { get; set; }
+        public DateTime CreateDate { get; set; }
 
         public static implicit operator SpotifyToken(Token token)
         {
@@ -17,7 +21,10 @@ namespace HomeHub.BackgroundServices.Models
                 AccessToken = token.AccessToken,
                 RefreshToken = token.RefreshToken,
                 TokenType = token.TokenType,
-                Error = token.Error
+                Error = token.Error,
+                ExpiresIn = token.ExpiresIn,
+                ErrorDescription = token.ErrorDescription,
+                CreateDate = token.CreateDate
             };
         }
     }

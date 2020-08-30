@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using HomeHub.BackgroundServices.Configuration.SpotifySort;
 using HomeHub.BackgroundServices.Database;
+using HomeHub.BackgroundServices.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -93,13 +94,14 @@ namespace HomeHub.BackgroundServices
                     using (var scope = scopeFactory.CreateScope())
                     {
                         var context = scope.ServiceProvider.GetService<ISpotifyContext>();
+
                         // Keeping it simple and only keeping one token at a time.
                         foreach (var token in context.Tokens)
                         {
                             context.Tokens.Remove(token);
                         }
-                        context.Tokens.Add(newToken);
-                        context.SaveChanges();
+                        await context.Tokens.AddAsync(newToken);
+                        await context.SaveChangesAsync(cancellationToken);
                     }
                 }
 

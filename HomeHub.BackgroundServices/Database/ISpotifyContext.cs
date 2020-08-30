@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using HomeHub.BackgroundServices.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +9,6 @@ namespace HomeHub.BackgroundServices.Database
     {
         DbSet<SpotifyToken> Tokens { get; set; }
 
-        int SaveChanges();
+        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

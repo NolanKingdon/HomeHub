@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using HomeHub.BackgroundServices.Configuration.SpotifySort;
 using HomeHub.BackgroundServices.Database;
+using HomeHub.BackgroundServices.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -58,7 +59,7 @@ namespace HomeHub.BackgroundServices
                     context.Tokens.Remove(token);
                 }
 
-                context.SaveChanges();
+                await context.SaveChangesAsync(cancellationToken);
             }
 
             Scope[] scopes = new Scope[]{
@@ -91,11 +92,9 @@ namespace HomeHub.BackgroundServices
                 using (var scope = scopeFactory.CreateScope())
                 {
                     var context = scope.ServiceProvider.GetService<ISpotifyContext>();
-                    context.Tokens.Add(Token);
-                    context.SaveChanges();
+                    context.Tokens.Add((SpotifyToken)Token);
+                    await context.SaveChangesAsync(cancellationToken);
                 }
-
-                api.GenerateApi(Token.TokenType, Token.AccessToken);
 
                 // Denotes that we can refresh the token in the future.
                 IsAuthenticated = true;
@@ -111,10 +110,34 @@ namespace HomeHub.BackgroundServices
             logger.LogInformation($"Please visit this link to authenticate: {authString}");
         }
 
+        private async Task UpdateTokens()
+        {
+            logger.LogInformation("Syncing Tokens with DB.");
+            using (var scope = scopeFactory.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetService<ISpotifyContext>();
+                var token = context.Tokens.FirstOrDefault();
+                var newToken = new Token
+                {
+                    AccessToken = token.AccessToken,
+                    TokenType = token.TokenType,
+                    ExpiresIn = token.ExpiresIn,
+                    RefreshToken = token.RefreshToken,
+                    Error = token.Error,
+                    ErrorDescription = token.ErrorDescription,
+                    CreateDate = token.CreateDate
+                };
+                Token = newToken;
+                RefreshToken = token.RefreshToken;
+            }
+        }
+
         public async Task RunSortAsync(SemaphoreSlim mainTaskSemaphore, CancellationToken cancellationToken)
         {
             await mainTaskSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
+            await UpdateTokens();
+            api.GenerateApi(Token.TokenType, Token.AccessToken);
 
             // Stores the ID/Description association.
             Dictionary<string, string> playlistDescriptions = new Dictionary<string, string>();
@@ -133,22 +156,22 @@ namespace HomeHub.BackgroundServices
             // Creating the association between the playlist ID and description
             foreach(var playlist in playlists.Result.Items)
             {
-                tasks.Add(Task.Run(async () =>
-                {
+                // tasks.Add(Task.Run(async () =>
+                // {
                     playlistDescriptions[playlist.Id] = await GetPlaylistDescriptionsAsync(playlist.Id, cancellationToken);
                     playlistNewSongs[playlist.Id] = new List<string>();
-                }));
+                // }));
             }
 
             // Making sure that the playlists are fully received before trying to sort into them.
-            await Task.WhenAll(tasks);
-            tasks.Clear();
+            // await Task.WhenAll(tasks);
+            // tasks.Clear();
 
             // Leveraging implicit conversion in this iteration to save on iterations elsewhere.
             foreach(SavedTrackWithGenre song in likedSongs.Result.Items)
             {
-                tasks.Add(Task.Run(async () =>
-                {
+                // tasks.Add(Task.Run(async () =>
+                // {
                     // Storing as genre track. Paging object isn't super helpful for this.
                     var songWithGenres = await GetGenreFromSongAsync(song, cancellationToken);
 
@@ -157,11 +180,11 @@ namespace HomeHub.BackgroundServices
                                                          playlistDescriptions,
                                                          playlistNewSongs,
                                                          cancellationToken);
-                }));
+                // }));
             }
 
-            await Task.WhenAll(tasks);
-            tasks.Clear();
+            // await Task.WhenAll(tasks);
+            // tasks.Clear();
 
             // Multicall for adding to playlists/removing from liked.
             await MoveNewSongsIntoPlaylistsAsync(playlistNewSongs, cancellationToken);
