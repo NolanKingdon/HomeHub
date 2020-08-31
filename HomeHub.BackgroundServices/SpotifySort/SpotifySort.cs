@@ -110,8 +110,33 @@ namespace HomeHub.BackgroundServices
             logger.LogInformation($"Please visit this link to authenticate: {authString}");
         }
 
-        private async Task UpdateTokens()
+        public async Task RunTokenRefresh(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            logger.LogInformation("Refreshing authentication token.");
+            var newToken = await Auth.RefreshToken(RefreshToken);
+
+            // We get one refresh token per authentication. We need to hang on to it.
+            newToken.RefreshToken = RefreshToken;
+
+            using (var scope = scopeFactory.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetService<ISpotifyContext>();
+
+                // Keeping it simple and only keeping one token at a time.
+                foreach (var token in context.Tokens)
+                {
+                    context.Tokens.Remove(token);
+                }
+                await context.Tokens.AddAsync(newToken);
+                await context.SaveChangesAsync(cancellationToken);
+            }
+        }
+
+        private async Task UpdateTokens(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             logger.LogInformation("Syncing Tokens with DB.");
             using (var scope = scopeFactory.CreateScope())
             {
@@ -136,7 +161,7 @@ namespace HomeHub.BackgroundServices
         {
             await mainTaskSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
-            await UpdateTokens();
+            await UpdateTokens(cancellationToken);
             api.GenerateApi(Token.TokenType, Token.AccessToken);
 
             // Stores the ID/Description association.

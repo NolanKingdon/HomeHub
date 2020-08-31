@@ -41,8 +41,6 @@ namespace HomeHub.BackgroundServices
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(sortOptions.Interval, cancellationToken);
-
                 if(semaphore.CurrentCount == 1)
                 {
                     logger.LogInformation("Running SpotifySortWorker - {time}", DateTimeOffset.Now);
@@ -67,6 +65,8 @@ namespace HomeHub.BackgroundServices
                 {
                     logger.LogInformation("Previous task did not complete.");
                 }
+
+                await Task.Delay(sortOptions.Interval, cancellationToken);
             }
         }
 
@@ -88,28 +88,13 @@ namespace HomeHub.BackgroundServices
             {
                 if(sorter.Token.IsExpired())
                 {
-                    logger.LogInformation("Refreshing authentication token.");
-                    var newToken = await sorter.Auth.RefreshToken(sorter.RefreshToken);
-
-                    using (var scope = scopeFactory.CreateScope())
-                    {
-                        var context = scope.ServiceProvider.GetService<ISpotifyContext>();
-
-                        // Keeping it simple and only keeping one token at a time.
-                        foreach (var token in context.Tokens)
-                        {
-                            context.Tokens.Remove(token);
-                        }
-                        await context.Tokens.AddAsync(newToken);
-                        await context.SaveChangesAsync(cancellationToken);
-                    }
+                    await sorter.RunTokenRefresh(cancellationToken);
                 }
 
                 await sorter.RunSortAsync(semaphore, cancellationToken);
             }
 
-            // TODO -> Error handling and request re-attempts w/ Polly.
-            logger.LogInformation("Sort successful!");
+            logger.LogInformation($"Sort successful! {DateTime.Now}");
         }
     }
 }
