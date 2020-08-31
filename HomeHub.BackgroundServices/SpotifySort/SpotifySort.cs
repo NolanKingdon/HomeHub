@@ -110,7 +110,7 @@ namespace HomeHub.BackgroundServices
             logger.LogInformation($"Please visit this link to authenticate: {authString}");
         }
 
-        public async Task RunTokenRefresh(CancellationToken cancellationToken)
+        public async Task RunTokenRefreshAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -181,35 +181,22 @@ namespace HomeHub.BackgroundServices
             // Creating the association between the playlist ID and description
             foreach(var playlist in playlists.Result.Items)
             {
-                // tasks.Add(Task.Run(async () =>
-                // {
-                    playlistDescriptions[playlist.Id] = await GetPlaylistDescriptionsAsync(playlist.Id, cancellationToken);
-                    playlistNewSongs[playlist.Id] = new List<string>();
-                // }));
+                playlistDescriptions[playlist.Id] = await GetPlaylistDescriptionsAsync(playlist.Id, cancellationToken);
+                playlistNewSongs[playlist.Id] = new List<string>();
             }
-
-            // Making sure that the playlists are fully received before trying to sort into them.
-            // await Task.WhenAll(tasks);
-            // tasks.Clear();
 
             // Leveraging implicit conversion in this iteration to save on iterations elsewhere.
             foreach(SavedTrackWithGenre song in likedSongs.Result.Items)
             {
-                // tasks.Add(Task.Run(async () =>
-                // {
-                    // Storing as genre track. Paging object isn't super helpful for this.
-                    var songWithGenres = await GetGenreFromSongAsync(song, cancellationToken);
+                // Storing as genre track. Paging object isn't super helpful for this.
+                var songWithGenres = await GetGenreFromSongAsync(song, cancellationToken);
 
-                    // Don't need to save the modified song anywhere IFF we can just directly add it to the dict.
-                    await AddSongsToGenreDictionaryAsync(songWithGenres,
-                                                         playlistDescriptions,
-                                                         playlistNewSongs,
-                                                         cancellationToken);
-                // }));
+                // Don't need to save the modified song anywhere IFF we can just directly add it to the dict.
+                await AddSongsToGenreDictionaryAsync(songWithGenres,
+                                                        playlistDescriptions,
+                                                        playlistNewSongs,
+                                                        cancellationToken);
             }
-
-            // await Task.WhenAll(tasks);
-            // tasks.Clear();
 
             // Multicall for adding to playlists/removing from liked.
             await MoveNewSongsIntoPlaylistsAsync(playlistNewSongs, cancellationToken);

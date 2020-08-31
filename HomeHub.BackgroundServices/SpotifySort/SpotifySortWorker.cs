@@ -88,7 +88,7 @@ namespace HomeHub.BackgroundServices
             {
                 if(sorter.Token.IsExpired())
                 {
-                    await sorter.RunTokenRefresh(cancellationToken);
+                    await sorter.RunTokenRefreshAsync(cancellationToken);
                 }
 
                 await sorter.RunSortAsync(semaphore, cancellationToken);
