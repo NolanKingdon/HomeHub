@@ -19,6 +19,7 @@ namespace HomeHub.BackgroundServices
                                           SemaphoreSlim semaphore,
                                           CancellationToken cancellationToken);
 
+        Task RunTokenRefreshAsync(CancellationToken cancellationToken);
         public Task RunSortAsync(SemaphoreSlim semaphore, CancellationToken cancellationToken);
     }
 }

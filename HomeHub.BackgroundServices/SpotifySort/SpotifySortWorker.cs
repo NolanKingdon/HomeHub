@@ -3,6 +3,9 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using HomeHub.BackgroundServices.Configuration.SpotifySort;
+using HomeHub.BackgroundServices.Database;
+using HomeHub.BackgroundServices.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,10 +20,13 @@ namespace HomeHub.BackgroundServices
         private readonly ISpotifySort sorter;
         private readonly SemaphoreSlim semaphore;
         private readonly string localIp;
+        private readonly IServiceScopeFactory scopeFactory;
+
         public SpotifySortWorker(ILogger<SpotifySortWorker> logger,
                                  IOptions<SpotifySortOptions> sortOptions,
                                  IOptions<SpotifyAuthentication> authOptions,
-                                 ISpotifySort sorter)
+                                 ISpotifySort sorter,
+                                 IServiceScopeFactory scopeFactory)
         {
             this.logger = logger;
             this.sortOptions = sortOptions.Value;
@@ -28,14 +34,13 @@ namespace HomeHub.BackgroundServices
             this.sorter = sorter;
             this.localIp = Dns.GetHostEntry(Dns.GetHostName()).AddressList[3].ToString();
             this.semaphore = new SemaphoreSlim(1, 1);
+            this.scopeFactory = scopeFactory;
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(sortOptions.Interval, cancellationToken);
-
                 if(semaphore.CurrentCount == 1)
                 {
                     logger.LogInformation("Running SpotifySortWorker - {time}", DateTimeOffset.Now);
@@ -60,6 +65,8 @@ namespace HomeHub.BackgroundServices
                 {
                     logger.LogInformation("Previous task did not complete.");
                 }
+
+                await Task.Delay(sortOptions.Interval, cancellationToken);
             }
         }
 
@@ -81,15 +88,13 @@ namespace HomeHub.BackgroundServices
             {
                 if(sorter.Token.IsExpired())
                 {
-                    logger.LogInformation("Refreshing authentication token.");
-                    await sorter.Auth.RefreshToken(sorter.RefreshToken);
+                    await sorter.RunTokenRefreshAsync(cancellationToken);
                 }
 
                 await sorter.RunSortAsync(semaphore, cancellationToken);
             }
 
-            // TODO -> Error handling and request re-attempts w/ Polly.
-            logger.LogInformation("Sort successful!");
+            logger.LogInformation($"Sort successful! {DateTime.Now}");
         }
     }
 }
