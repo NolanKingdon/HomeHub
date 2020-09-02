@@ -12,6 +12,7 @@ namespace HomeHub.BackgroundServices
         public SpotifyAuthorizationCodeAuth Auth { get; set; }
         public string RefreshToken { get; set; }
         public Token Token { get; set; }
+        public IApi Api { get; }
 
         public Task AuthenticateUserAsync(string clientId,
                                           string clientSecret,
@@ -21,5 +22,9 @@ namespace HomeHub.BackgroundServices
 
         Task RunTokenRefreshAsync(CancellationToken cancellationToken);
         public Task RunSortAsync(SemaphoreSlim semaphore, CancellationToken cancellationToken);
+        Task<Paging<SavedTrack>> GetUserLikedTracksAsync(CancellationToken cancellationToken);
+        Task<SavedTrackWithGenre> GetGenreFromSongAsync(
+            SavedTrackWithGenre genreTrack,
+            CancellationToken cancellationToken);
     }
 }
