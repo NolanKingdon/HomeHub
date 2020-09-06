@@ -16,8 +16,21 @@ A project to consolidate several functions into one, raspberrypi powered home se
 - Unreliable tests?
 - Auth test
 
+### Temperature Services
+
+### Background Services
+
+- Serilog
+
 ### Api
 - Get unmatched spotify songs
 - Authentication for access to Pi?
 - Future Arduinos
 - Download helper (VPN)
+- Get Temps
+- Get logs?
+
+### Email Notifier
+- Send if temps go to high
+- Send if download done
+- Send if Critical Errors are logged
