@@ -25,7 +25,7 @@ namespace HomeHub.Api
                 {
                     sortOptions.MaxConcurrentThreads = 10;
                     sortOptions.MaxPlaylistResults = 10;
-                    sortOptions.MaxSongResults = 100;
+                    sortOptions.MaxSongResults = 300;
                 });
             services.AddControllers();
         }
