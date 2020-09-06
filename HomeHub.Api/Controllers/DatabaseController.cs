@@ -67,12 +67,12 @@ namespace HomeHub.Api.Controllers
 
             foreach (SavedTrackWithGenre track in tracks.Items)
             {
-                // Todo -> Async this. ConcurrentDictionary?
                 var genreTrack = await spotifySorter.GetGenreFromSongAsync(track, cancellationToken);
 
                 foreach (string genre in genreTrack.Genres)
                 {
                     genreCount.TotalCount++;
+
                     if(genreCount.GenreCounts.TryGetValue(genre, out int _))
                     {
                         genreCount.GenreCounts[genre]++;
@@ -123,8 +123,8 @@ namespace HomeHub.Api.Controllers
 
             foreach (SavedTrackWithGenre track in tracks.Items)
             {
-                // Todo -> Async this. ConcurrentDictionary?
                 var genreTrack = await spotifySorter.GetGenreFromSongAsync(track, cancellationToken);
+
                 resultList.Add(new DescriptiveGenresDto
                 {
                     Artist = genreTrack.Track.Artists[0].Name,

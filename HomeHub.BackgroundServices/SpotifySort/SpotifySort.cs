@@ -168,7 +168,7 @@ namespace HomeHub.BackgroundServices
         {
             await mainTaskSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
-            await UpdateTokens(cancellationToken);
+            await UpdateTokensAsync(cancellationToken);
             Api.GenerateApi(Token.TokenType, Token.AccessToken);
 
             // Stores the ID/Description association.
