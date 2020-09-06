@@ -52,7 +52,6 @@ namespace HomeHub.Api.Controllers
 
             CancellationToken cancellationToken = default;
             GenreCountDto genreCount = new GenreCountDto();
-            // Dictionary<string, int> genreCount = new Dictionary<string, int>();
             var token = await spotifyContext.Tokens.FirstOrDefaultAsync();
 
             spotifySorter.Api.GenerateApi(token.TokenType, token.AccessToken);

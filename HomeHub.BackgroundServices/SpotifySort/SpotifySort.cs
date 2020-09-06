@@ -141,7 +141,7 @@ namespace HomeHub.BackgroundServices
             }
         }
 
-        private async Task UpdateTokens(CancellationToken cancellationToken)
+        private async Task UpdateTokensAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             logger.LogInformation("Syncing Tokens with DB.");
