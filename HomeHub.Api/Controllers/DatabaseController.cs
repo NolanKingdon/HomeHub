@@ -30,6 +30,17 @@ namespace HomeHub.Api.Controllers
             this.spotifySorter = spotifySorter;
         }
 
+        /// <summary>
+        /// Returns a dictionary where the Key is the genre type, and the value is how
+        /// many times the genre occurs in my liked songs.
+        /// Is designed to be polled to see if a new playlist should be created to accomodate the
+        /// influx of the new songs or not.
+        /// </summary>
+        /// <remarks>
+        ///     Sample Request
+        ///         GET - https://localhost:5001/api/v1/database/spotify/genres
+        /// </remarks>
+        /// <returns><see ref="GenreCountDto"></returns>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -77,12 +88,23 @@ namespace HomeHub.Api.Controllers
             return Ok(genreCount);
         }
 
+        /// <summary>
+        /// Returns a list of DescriptiveGenresDto.
+        /// Intended use is to be called after the count endpoint to see the association between
+        /// song and genre. Lets you investigate strange genres.
+        /// </summary>
+        /// <remarks>
+        ///     Sample request:
+        ///         GET https://localhost:5001/api/v1/database/spotify/genres/detailed
+        /// </remarks>
+        /// <returns>List of DescriptiveGenresDto objects</returns>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Route("spotify/genres/detailed")]
         public async Task<ActionResult> SpotifyGenresWithSongs()
         {
+            // Todo -> Add ability to sort by specific song/genres?
             logger.LogInformation("Received Genres request.");
 
             CancellationToken cancellationToken = default;

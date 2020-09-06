@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -14,6 +15,12 @@ using SpotifyAPI.Web.Models;
 
 namespace HomeHub.BackgroundServices
 {
+    /// <summary>
+    /// Sorting class for the spotify service. Referenced in several other projects via extension method.
+    /// Was initially going to be asynchronous, but the API Wrapper being used isn't Actually Async and
+    /// relies on thread unsafe collections. In the future, I may want to write my own, thread safe wrapper.
+    /// But for now, I'm going to have to use the 5+ second calls provided by the wrapper.
+    /// </summary>
     public class SpotifySort : ISpotifySort
     {
         private readonly ILogger<SpotifySort> logger;
@@ -165,18 +172,15 @@ namespace HomeHub.BackgroundServices
             Api.GenerateApi(Token.TokenType, Token.AccessToken);
 
             // Stores the ID/Description association.
-            Dictionary<string, string> playlistDescriptions = new Dictionary<string, string>();
+            ConcurrentDictionary<string, string> playlistDescriptions = new ConcurrentDictionary<string, string>();
 
             // Stores the PlaylistID/SongID relation for the multi call back to the API.
-            Dictionary<string, List<string>> playlistNewSongs = new Dictionary<string, List<string>>();
+            ConcurrentDictionary<string, List<string>> playlistNewSongs = new ConcurrentDictionary<string, List<string>>();
             List<Task> tasks = new List<Task>();
             var playlists = GetUserPlaylistsAsync(cancellationToken);
             var likedSongs = GetUserLikedTracksAsync(cancellationToken);
 
             await Task.WhenAll(new Task[] { playlists, likedSongs });
-
-            // TODO -> Move the Get Descriptions and Get Genres to their own things.
-            // TODO -> This could potentially spawn 100+ requests. Consider a semaphore to help less powerful pi?
 
             // Creating the association between the playlist ID and description
             foreach(var playlist in playlists.Result.Items)
@@ -192,15 +196,15 @@ namespace HomeHub.BackgroundServices
                 var songWithGenres = await GetGenreFromSongAsync(song, cancellationToken);
 
                 // Don't need to save the modified song anywhere IFF we can just directly add it to the dict.
-                await AddSongsToGenreDictionaryAsync(songWithGenres,
-                                                        playlistDescriptions,
-                                                        playlistNewSongs,
-                                                        cancellationToken);
+                await AddSongsToGenreDictionaryAsync(
+                    songWithGenres,
+                    playlistDescriptions,
+                    playlistNewSongs,
+                    cancellationToken);
             }
 
             // Multicall for adding to playlists/removing from liked.
             await MoveNewSongsIntoPlaylistsAsync(playlistNewSongs, cancellationToken);
-
             mainTaskSemaphore.Release();
         }
 
@@ -256,14 +260,23 @@ namespace HomeHub.BackgroundServices
         {
             await RequestSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
+            List<string> genres = new List<string>();
 
             foreach(var artist in genreTrack.Track.Artists)
             {
                 // Could async this too if performance is really taking a hit, but it probably isn't necessary.
                 logger.LogInformation($"Getting Genres for artist {artist} for song {genreTrack.Track.Name}");
+
+                // This call specifically seems to give me trouble when trying to leverage async.
                 var fullArtist = await Api.GetArtistAsync(artist.Id);
-                genreTrack.Genres = genreTrack.Genres.Concat(fullArtist.Genres).ToList();
+
+                if (fullArtist.Genres != null)
+                {
+                    genres = genres.Concat(fullArtist.Genres).ToList();
+                }
             }
+
+            genreTrack.Genres = genres;
 
             cancellationToken.ThrowIfCancellationRequested();
             RequestSemaphore.Release();
@@ -272,48 +285,48 @@ namespace HomeHub.BackgroundServices
 
         private async Task AddSongsToGenreDictionaryAsync(
             SavedTrackWithGenre genreTrack,
-            Dictionary<string, string> genreIdDict,
-            Dictionary<string, List<string>> newSongsDict,
+            ConcurrentDictionary<string, string> genreIdDict,
+            ConcurrentDictionary<string, List<string>> newSongsDict,
             CancellationToken cancellationToken)
         {
             await RequestSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
             logger.LogInformation($"Adding {genreTrack.Track.Name} to genreList");
 
-            // foreach(string genre in genreTrack.Genres)
-            // {
-            //     foreach(KeyValuePair<string, string> genres in genreIdDict)
-            //     {
-            //         // If the genre exists in any playlist genre, AND isn't already in the newSongsDict.
-            //         if (genres.Value.Contains(genre) && (!newSongsDict[genres.Key].Contains(genre)))
-            //         {
-            //             newSongsDict[genres.Key].Add(genreTrack.Track.Id);
-            //         }
-            //     }
-            // }
+            foreach(string genre in genreTrack.Genres)
+            {
+                foreach(KeyValuePair<string, string> genres in genreIdDict)
+                {
+                    // If the genre exists in any playlist genre, AND isn't already in the newSongsDict.
+                    if (genres.Value.Contains(genre) && (!newSongsDict[genres.Key].Contains(genre)))
+                    {
+                        newSongsDict[genres.Key].Add(genreTrack.Track.Id);
+                    }
+                }
+            }
 
             RequestSemaphore.Release();
         }
 
         private async Task MoveNewSongsIntoPlaylistsAsync(
-            Dictionary<string, List<string>> newPlaylistSongsDict,
+            ConcurrentDictionary<string, List<string>> newPlaylistSongsDict,
             CancellationToken cancellationToken)
         {
             await RequestSemaphore.WaitAsync();
-            cancellationToken.ThrowIfCancellationRequested();
-            List<Task> tasks = new List<Task>();
-            List<string> unlikeList = new List<string>();
+            // cancellationToken.ThrowIfCancellationRequested();
+            // List<Task> tasks = new List<Task>();
+            // List<string> unlikeList = new List<string>();
 
-            foreach(KeyValuePair<string, List<string>> entry in newPlaylistSongsDict)
-            {
-                logger.LogInformation($"Moving tracks to playlist: {entry.Key}");
-                tasks.Add(Api.AddPlaylistTracksAsync(entry.Key, entry.Value));
-                unlikeList = unlikeList.Concat(entry.Value).ToList();
-            }
+            // foreach(KeyValuePair<string, List<string>> entry in newPlaylistSongsDict)
+            // {
+            //     logger.LogInformation($"Moving tracks to playlist: {entry.Key}");
+            //     tasks.Add(Api.AddPlaylistTracksAsync(entry.Key, entry.Value));
+            //     unlikeList = unlikeList.Concat(entry.Value).ToList();
+            // }
 
-            await Task.WhenAll(tasks);
-            logger.LogInformation("Unliking moved songs.");
-            await Api.RemoveSavedTracksAsync(unlikeList);
+            // await Task.WhenAll(tasks);
+            // logger.LogInformation("Unliking moved songs.");
+            // await Api.RemoveSavedTracksAsync(unlikeList);
             RequestSemaphore.Release();
         }
     }
