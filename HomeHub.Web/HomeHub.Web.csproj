@@ -3,7 +3,9 @@
   <ItemGroup>
     <ProjectReference Include="..\HomeHub.SpotifySort\HomeHub.SpotifySort.csproj" />
   </ItemGroup>
-
+  <PropertyGroup>
+    <CodeAnalysisRuleSet>../global.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
