@@ -86,6 +86,8 @@ namespace HomeHub.SpotifySort
                 scopes
             );
 
+            logger.LogInformation($"id - {clientId}\n secret - {clientSecret}\n localIp - {localIp}\n scopes - {scopes}");
+
             // Delegate for when the endpoint has been accessed/approved by user.
             Auth.AuthReceived += async (sender, payload) =>
             {

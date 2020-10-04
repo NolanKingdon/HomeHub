@@ -4,5 +4,6 @@ namespace HomeHub.SpotifySort.Configuration
     {
         public string ClientId { get; set; }
         public string ClientSecret { get; set; }
+        public string CallbackIp { get; set; }
     }
 }

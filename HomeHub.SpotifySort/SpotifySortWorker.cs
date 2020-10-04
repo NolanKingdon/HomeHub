@@ -32,7 +32,7 @@ namespace HomeHub.SpotifySort
             this.sortOptions = sortOptions.Value;
             this.authOptions = authOptions.Value;
             this.sorter = sorter;
-            this.localIp = Dns.GetHostEntry(Dns.GetHostName()).AddressList[3].ToString();
+            this.localIp = this.authOptions.CallbackIp;
             this.semaphore = new SemaphoreSlim(1, 1);
             this.scopeFactory = scopeFactory;
         }

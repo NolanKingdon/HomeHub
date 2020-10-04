@@ -1,6 +1,7 @@
 using System;
 using HomeHub.SpotifySort.Configuration;
 using HomeHub.SpotifySort.Database;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HomeHub.SpotifySort.Extensions
@@ -12,17 +13,14 @@ namespace HomeHub.SpotifySort.Extensions
         /// Provides all necessary configurations.
         /// </summary>
         /// <param name="services"></param>
-        /// <param name="sortOptions">SpotifySortOptions action</param>
-        /// <param name="authOptions">SpotifyAuthenticationOptions action</param>
+        /// <param name="configuration"></param>
         /// <returns></returns>
         public static IServiceCollection UseSpotifySorter(
             this IServiceCollection services,
-            Action<SpotifySortOptions> sortOptions = null,
-            Action<SpotifyAuthentication> authOptions = null)
+            IConfiguration configuration)
         {
-            return AddAndConfigureClasses(services, sortOptions, authOptions);
+            return AddAndConfigureClasses(services, configuration);
         }
-
 
         /// <summary>
         /// If you want to use the library as a hosted Service,
@@ -30,46 +28,34 @@ namespace HomeHub.SpotifySort.Extensions
         /// into the services.
         /// </summary>
         /// <param name="services"></param>
-        /// <param name="sortOptions"></param>
-        /// <param name="authOptions"></param>
+        /// <param name="configuration"></param>
         /// <returns></returns>
-        public static IServiceCollection UseSpotifySorterBackgroundService(
+       public static IServiceCollection UseSpotifySorterBackgroundService(
             this IServiceCollection services,
-
-            Action<SpotifySortOptions> sortOptions = null,
-            Action<SpotifyAuthentication> authOptions = null)
+            IConfiguration configuration)
         {
-            services = AddAndConfigureClasses(services, sortOptions, authOptions);
-
-            // TODO -> This may require us to pass in the host builder. It's here for if/when it happens.
-            services.AddHostedService<SpotifySortWorker>()
-                    .AddOptions(sortOptions);
+            services = AddAndConfigureClasses(services, configuration);
+            services.AddHostedService<SpotifySortWorker>();
 
             return services;
         }
 
-    /// <summary>
-    /// Sets up the base DI and database for the SpotifySort library.
-    /// </summary>
-    /// <param name="services"></param>
-    /// <param name="sortOptions"></param>
-    /// <param name="authOptions"></param>
-    /// <returns></returns>
+        /// <summary>
+        /// Sets up the base dependency injection and DB context for the library.
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="configuration"></param>
+        /// <returns>IServiceCollection</returns>
         private static IServiceCollection AddAndConfigureClasses(
             IServiceCollection services,
-            Action<SpotifySortOptions> sortOptions,
-            Action<SpotifyAuthentication> authOptions)
+            IConfiguration configuration)
         {
             services.AddDbContext<ISpotifyContext, SpotifyContext>();
-
             services.AddOptions<SpotifySortOptions>()
-                    .Configure(sortOptions);
+                    .Bind(configuration.GetSection("SpotifySortOptions"));
 
-            if (authOptions != null)
-            {
-                services.AddOptions<SpotifyAuthentication>()
-                        .Configure(authOptions);
-            }
+            services.AddOptions<SpotifyAuthentication>()
+                    .Bind(configuration.GetSection("SpotifyAuthentication"));
 
             services.AddSingleton<ISpotifySort, SpotifySort>();
             services.AddSingleton<IApi, ApiWrapper>();
