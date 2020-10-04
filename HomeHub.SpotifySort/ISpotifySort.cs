@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using HomeHub.BackgroundServices.Configuration.SpotifySort;
+using HomeHub.SpotifySort.Configuration;
 using SpotifyAPI.Web.Models;
 
 namespace HomeHub.SpotifySort

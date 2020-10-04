@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
-using HomeHub.BackgroundServices.Configuration.SpotifySort;
-using HomeHub.BackgroundServices.Models;
+using HomeHub.SpotifySort.Configuration;
+using HomeHub.SpotifySort.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

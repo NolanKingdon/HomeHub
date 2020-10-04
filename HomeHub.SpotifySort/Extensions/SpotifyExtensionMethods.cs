@@ -1,5 +1,6 @@
 using System;
-using HomeHub.BackgroundServices.Configuration.SpotifySort;
+using HomeHub.SpotifySort.Configuration;
+using HomeHub.SpotifySort.Database;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HomeHub.SpotifySort.Extensions

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Models;
 
-namespace HomeHub.BackgroundServices
+namespace HomeHub.SpotifySort
 {
     /// <summary>
     /// Wrapper class for the API. Allows for Dependency injection and for testing
