@@ -1,16 +1,15 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
 using AutoFixture.AutoMoq;
-using HomeHub.BackgroundServices.Configuration.SpotifySort;
-using HomeHub.BackgroundServices.Tests.Customizations.Spotify;
-using Microsoft.Extensions.Logging;
+using HomeHub.Tests.Customizations.Spotify;
+using HomeHub.SpotifySort;
+using HomeHub.SpotifySort.Configuration;
 using Moq;
 using Xunit;
 
-namespace HomeHub.BackgroundServices.Tests
+namespace HomeHub.Tests
 {
     /// <summary>
     /// Some basic tests. Not super comprehensive, just the bare minimum for what I would consider
@@ -20,7 +19,7 @@ namespace HomeHub.BackgroundServices.Tests
     public class SpotifyServiceTestToPass
     {
         readonly IFixture fixture;
-        readonly SpotifySort sort;
+        readonly SpotifySorter sort;
 
         public SpotifyServiceTestToPass()
         {
@@ -34,7 +33,7 @@ namespace HomeHub.BackgroundServices.Tests
             var api = fixture.Create<IApi>();
 
             // Autofixture takes care of dependencies for us.
-            sort = fixture.Create<SpotifySort>();
+            sort = fixture.Create<SpotifySorter>();
         }
 
         // TODO -> Learn how to invoke on an event listener so the test doesn't hang.

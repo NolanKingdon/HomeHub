@@ -1,7 +1,7 @@
 using AutoFixture;
-using HomeHub.BackgroundServices.Configuration.SpotifySort;
+using HomeHub.SpotifySort.Configuration;
 
-namespace HomeHub.BackgroundServices.Tests.Customizations.Spotify
+namespace HomeHub.Tests.Customizations.Spotify
 {
     public class SpotifyAuthCustomization : ICustomization
     {

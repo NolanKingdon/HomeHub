@@ -57,7 +57,7 @@ namespace HomeHub.SpotifySort.Extensions
             services.AddOptions<SpotifyAuthentication>()
                     .Bind(configuration.GetSection("SpotifyAuthentication"));
 
-            services.AddSingleton<ISpotifySort, SpotifySort>();
+            services.AddSingleton<ISpotifySort, SpotifySorter>();
             services.AddSingleton<IApi, ApiWrapper>();
 
             return services;

@@ -21,9 +21,9 @@ namespace HomeHub.SpotifySort
     /// relies on thread unsafe collections. In the future, I may want to write my own, thread safe wrapper.
     /// But for now, I'm going to have to use the 5+ second calls provided by the wrapper.
     /// </summary>
-    public class SpotifySort : ISpotifySort
+    public class SpotifySorter : ISpotifySort
     {
-        private readonly ILogger<SpotifySort> logger;
+        private readonly ILogger<SpotifySorter> logger;
         private readonly SpotifySortOptions options;
         public IApi Api { get; }
         private PrivateProfile user;
@@ -34,8 +34,8 @@ namespace HomeHub.SpotifySort
         private readonly IServiceScopeFactory scopeFactory;
         public SemaphoreSlim RequestSemaphore { get; }
 
-        public SpotifySort(
-            ILogger<SpotifySort> logger,
+        public SpotifySorter(
+            ILogger<SpotifySorter> logger,
             IOptions<SpotifySortOptions> options,
             IApi api,
             IServiceScopeFactory scopeFactory)

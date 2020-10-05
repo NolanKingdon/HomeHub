@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace HomeHub.Api.Controllers
+namespace HomeHub.Web.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
