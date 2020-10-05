@@ -23,6 +23,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HomeHub.BackgroundServices\HomeHub.BackgroundServices.csproj" />
+    <ProjectReference Include="..\HomeHub.SpotifySort\HomeHub.SpotifySort.csproj" />
+    <ProjectReference Include="..\HomeHub.Web\HomeHub.Web.csproj" />
   </ItemGroup>
 
 </Project>
