@@ -32,18 +32,21 @@ namespace HomeHub.SpotifySort
         public string RefreshToken { get; set; }
         public Token Token { get; set; }
         private readonly IServiceScopeFactory scopeFactory;
+        private readonly IContextProvider contextProvider;
         public SemaphoreSlim RequestSemaphore { get; }
 
         public SpotifySorter(
             ILogger<SpotifySorter> logger,
             IOptions<SpotifySortOptions> options,
             IApi api,
-            IServiceScopeFactory scopeFactory)
+            IServiceScopeFactory scopeFactory,
+            IContextProvider contextProvider)
         {
             this.logger = logger;
             this.options = options.Value;
-            this.Api = api;
+            Api = api;
             this.scopeFactory = scopeFactory;
+            this.contextProvider = contextProvider;
             RequestSemaphore = new SemaphoreSlim(this.options.MaxConcurrentThreads, this.options.MaxConcurrentThreads);
         }
 
@@ -58,9 +61,8 @@ namespace HomeHub.SpotifySort
             logger.LogInformation("Starting authentication process.");
 
             // If we're authenticating for the first time, we want to clear out our tokens if they exist.
-            using (var scope = scopeFactory.CreateScope())
+            using (var context = contextProvider.GenerateContext<ISpotifyContext>(scopeFactory))
             {
-                var context = scope.ServiceProvider.GetService<ISpotifyContext>();
                 foreach (var token in context.Tokens)
                 {
                     context.Tokens.Remove(token);
@@ -147,9 +149,8 @@ namespace HomeHub.SpotifySort
         {
             cancellationToken.ThrowIfCancellationRequested();
             logger.LogInformation("Syncing Tokens with DB.");
-            using (var scope = scopeFactory.CreateScope())
+            using (var context = contextProvider.GenerateContext<ISpotifyContext>(scopeFactory))
             {
-                var context = scope.ServiceProvider.GetService<ISpotifyContext>();
                 var token = context.Tokens.FirstOrDefault();
                 var newToken = new Token
                 {
@@ -315,20 +316,20 @@ namespace HomeHub.SpotifySort
             CancellationToken cancellationToken)
         {
             await RequestSemaphore.WaitAsync();
-            // cancellationToken.ThrowIfCancellationRequested();
-            // List<Task> tasks = new List<Task>();
-            // List<string> unlikeList = new List<string>();
+            cancellationToken.ThrowIfCancellationRequested();
+            List<Task> tasks = new List<Task>();
+            List<string> unlikeList = new List<string>();
 
-            // foreach(KeyValuePair<string, List<string>> entry in newPlaylistSongsDict)
-            // {
-            //     logger.LogInformation($"Moving tracks to playlist: {entry.Key}");
-            //     tasks.Add(Api.AddPlaylistTracksAsync(entry.Key, entry.Value));
-            //     unlikeList = unlikeList.Concat(entry.Value).ToList();
-            // }
+            foreach(KeyValuePair<string, List<string>> entry in newPlaylistSongsDict)
+            {
+                logger.LogInformation($"Moving tracks to playlist: {entry.Key}");
+                tasks.Add(Api.AddPlaylistTracksAsync(entry.Key, entry.Value));
+                unlikeList = unlikeList.Concat(entry.Value).ToList();
+            }
 
-            // await Task.WhenAll(tasks);
-            // logger.LogInformation("Unliking moved songs.");
-            // await Api.RemoveSavedTracksAsync(unlikeList);
+            await Task.WhenAll(tasks);
+            logger.LogInformation("Unliking moved songs.");
+            await Api.RemoveSavedTracksAsync(unlikeList);
             RequestSemaphore.Release();
         }
     }
