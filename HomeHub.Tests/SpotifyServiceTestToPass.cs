@@ -8,6 +8,12 @@ using HomeHub.SpotifySort;
 using HomeHub.SpotifySort.Configuration;
 using Moq;
 using Xunit;
+using HomeHub.SpotifySort.Database;
+using HomeHub.SpotifySort.Models;
+using SpotifyAPI.Web.Models;
+using System.Linq;
+using MockQueryable.Moq;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HomeHub.Tests
 {
@@ -28,9 +34,8 @@ namespace HomeHub.Tests
             fixture.Customize(new AutoMoqCustomization())
                    .Customize(new SpotifyAuthCustomization())
                    .Customize(new SpotifySortOptionsCustomization())
-                   .Customize(new SpotifyApiCustomization());
-
-            var api = fixture.Create<IApi>();
+                   .Customize(new SpotifyApiCustomization())
+                   .Customize(new SpotifyContextCustomizations());
 
             // Autofixture takes care of dependencies for us.
             sort = fixture.Create<SpotifySorter>();
