@@ -59,6 +59,7 @@ namespace HomeHub.SpotifySort.Extensions
 
             services.AddSingleton<ISpotifySort, SpotifySorter>();
             services.AddSingleton<IApi, ApiWrapper>();
+            services.AddSingleton<IContextProvider, ContextProvider>();
 
             return services;
         }
