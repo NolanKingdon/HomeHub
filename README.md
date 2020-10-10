@@ -1,4 +1,4 @@
-[![Actions Status](https://github.com/NolanKingdon/HomeHub/workflows/dotnet-core/badge.svg)](https://github.com/{owner}/{repo}/actions)
+[![Actions Status](https://github.com/NolanKingdon/HomeHub/workflows/dotnet-core/badge.svg)](https://github.com/NolanKingdon/HomeHub/actions)
 
 # HouseHub
 
