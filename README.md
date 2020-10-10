@@ -1,19 +1,14 @@
+[![Actions Status](https://github.com/NolanKingdon/HomeHub/workflows/dotnet-core/badge.svg)](https://github.com/{owner}/{repo}/actions)
+
 # HouseHub
 
 A project to consolidate several functions into one, raspberrypi powered home server.
 
 ## TODOs
 
-### General
-
-- Github test pipeline
 
 ### SpotifySort service
-
-- Clean up the code
 - Serilog
-- *Tests are now completely broken and need have the SpotifyContext mocked before working again*
-- Unreliable tests?
 - Auth test
 
 ### Temperature Services
