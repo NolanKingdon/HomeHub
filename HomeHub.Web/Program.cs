@@ -1,11 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace HomeHub.Web
 {
@@ -13,7 +10,20 @@ namespace HomeHub.Web
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            try
+            {
+                CreateHostBuilder(args).Build().Run();
+            }
+            catch (OperationCanceledException)
+            {
+                Log.Logger.Information("Program Cancelled.");
+            }
+            catch (Exception e)
+            {
+                Log.Logger.Information($"Ended with unexpected Error {e}");
+            }
+
+            Log.Logger.Information("Program Shutdown.");
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -25,6 +35,7 @@ namespace HomeHub.Web
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                });
+                })
+                .UseSerilog();
     }
 }
