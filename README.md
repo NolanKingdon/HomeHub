@@ -8,14 +8,9 @@ A project to consolidate several functions into one, raspberrypi powered home se
 
 
 ### SpotifySort service
-- Serilog
 - Auth test
 
 ### Temperature Services
-
-### Background Services
-
-- Serilog
 
 ### Api
 - Get unmatched spotify songs
@@ -24,8 +19,3 @@ A project to consolidate several functions into one, raspberrypi powered home se
 - Download helper (VPN)
 - Get Temps
 - Get logs?
-
-### Email Notifier
-- Send if temps go to high
-- Send if download done
-- Send if Critical Errors are logged

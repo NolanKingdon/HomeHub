@@ -118,7 +118,9 @@ namespace HomeHub.SpotifySort
 
             var authString = Auth.CreateUri();
 
-            logger.LogInformation($"Please visit this link to authenticate: {authString}");
+            // This will do for now, but I'd like to have a better way of doing this.
+            // Logging it as an error makes it email the code to the provided user.
+            logger.LogError($"Spotify user is not authenticated. Please visit this link to authenticate:\n {authString}");
         }
 
         public async Task RunTokenRefreshAsync(CancellationToken cancellationToken)

@@ -1,15 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using HomeHub.SpotifySort.Configuration;
+using System.Net;
 using HomeHub.SpotifySort.Extensions;
+using HomeHub.Web.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Serilog;
+using Serilog.Events;
+using Serilog.Sinks.Email;
 
 namespace HomeHub.Web
 {
@@ -18,6 +17,31 @@ namespace HomeHub.Web
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+
+            // Configuring Serilog. TODO -> Find better place for this than a constructor.
+            var serilogOptions = new SerilogOptions();
+            Configuration.Bind("SerilogOptions", serilogOptions);
+
+            var networkCredential = new NetworkCredential(
+                serilogOptions.FromEmail,
+                serilogOptions.FromEmailPassword);
+
+            var emailConnectionInfo = new EmailConnectionInfo
+            {
+                Port = serilogOptions.Port,
+                FromEmail = serilogOptions.FromEmail,
+                ToEmail = serilogOptions.ToEmail,
+                EnableSsl = serilogOptions.EnableSsl,
+                EmailSubject = serilogOptions.EmailSubject,
+                MailServer = serilogOptions.SmtpServer,
+                NetworkCredentials = networkCredential
+            };
+
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .WriteTo.Console()
+                .WriteTo.Email(emailConnectionInfo, restrictedToMinimumLevel: LogEventLevel.Error)
+                .CreateLogger();
         }
 
         public IConfiguration Configuration { get; }
@@ -43,6 +67,7 @@ namespace HomeHub.Web
                 app.UseHsts();
             }
 
+            // Configuring App.
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
