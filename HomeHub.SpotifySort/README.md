@@ -1,9 +1,8 @@
-# Background Services
-
-### SpotifySort
+# Spotify Sort Library
 
 Periodically checks against Spotify using given credentials to access and sort liked songs. Service looks at public, user created playlists, and will sort accordingly based on the description. Once sorted, the song will be removed from the 'liked' section via unliking.
 
+Database created using [Entity Framework Core](https://docs.microsoft.com/en-us/ef/core/).
 Made using [SpotifyAPI-Net](https://johnnycrazy.github.io/SpotifyAPI-NET/).
 Leverages [Spotify Web Api](https://developer.spotify.com/documentation/web-api/).
 
