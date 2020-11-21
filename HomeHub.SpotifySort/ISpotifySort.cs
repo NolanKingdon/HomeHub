@@ -8,20 +8,21 @@ namespace HomeHub.SpotifySort
 {
     public interface ISpotifySort
     {
-        public bool IsAuthenticated { get; set; }
-        public SpotifyAuthorizationCodeAuth Auth { get; set; }
-        public string RefreshToken { get; set; }
-        public Token Token { get; set; }
-        public IApi Api { get; }
+        bool IsAuthenticated { get; set; }
+        SpotifyAuthorizationCodeAuth Auth { get; set; }
+        string RefreshToken { get; set; }
+        Token Token { get; set; }
+        IApi Api { get; }
+        bool Active { get; set; }
 
-        public Task AuthenticateUserAsync(string clientId,
+        Task AuthenticateUserAsync(string clientId,
                                           string clientSecret,
                                           string localIp,
                                           SemaphoreSlim semaphore,
                                           CancellationToken cancellationToken);
 
         Task RunTokenRefreshAsync(CancellationToken cancellationToken);
-        public Task RunSortAsync(SemaphoreSlim semaphore, CancellationToken cancellationToken);
+        Task RunSortAsync(SemaphoreSlim semaphore, CancellationToken cancellationToken);
         Task<Paging<SavedTrack>> GetUserLikedTracksAsync(CancellationToken cancellationToken);
         Task<SavedTrackWithGenre> GetGenreFromSongAsync(
             SavedTrackWithGenre genreTrack,
