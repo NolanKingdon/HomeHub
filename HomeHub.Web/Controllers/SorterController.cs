@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,13 +15,13 @@ namespace HomeHub.Web.Controllers
     [ApiController]
     [Route("api/v1/[controller]")]
     [Produces("application/json")]
-    public class DatabaseController : ControllerBase
+    public class SorterController : ControllerBase
     {
-        private readonly ILogger<DatabaseController> logger;
+        private readonly ILogger<SorterController> logger;
         private readonly ISpotifyContext spotifyContext;
         private readonly ISpotifySort spotifySorter;
 
-        public DatabaseController(ILogger<DatabaseController> logger, ISpotifyContext spotifyContext, ISpotifySort spotifySorter)
+        public SorterController(ILogger<SorterController> logger, ISpotifyContext spotifyContext, ISpotifySort spotifySorter)
         {
             this.logger = logger;
             this.spotifyContext = spotifyContext;
@@ -41,20 +42,37 @@ namespace HomeHub.Web.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [Route("spotify/genres/")]
-        [Route("spotify/genres/count")]
-        public async Task<ActionResult> UnsortedSpotifyGenres()
+        [Route("genres/")]
+        [Route("genres/count")]
+        public async Task<ActionResult> GetUnsortedGenresAsync()
         {
             logger.LogInformation("Received Genres request.");
+
+            if (!spotifySorter.Active)
+            {
+                return Ok(new
+                {
+                    Error = "SpotifySorter is currently offline. Please use activation request to start the service."
+                });
+            }
 
             CancellationToken cancellationToken = default;
             GenreCountDto genreCount = new GenreCountDto();
             var token = await spotifyContext.Tokens.FirstOrDefaultAsync();
 
+            if (spotifySorter.Api == null || token == null)
+            {
+                return Ok(new
+                {
+                    Error = "SpotifySorter API Does not exist. Authentication may be required."
+                });
+            }
+
+            // TODO -> Throw an error response if doesn't have authentication yet.
             spotifySorter.Api.GenerateApi(token.TokenType, token.AccessToken);
 
             // TODO -> Make a standalone re-authentication method without relying on potentially uncreated .Auth
-            // In theory, this will never be an issue, because the background service is always running.
+            // In theory, will never be an issue, because the background service is always running.
             var tracks = await spotifySorter.GetUserLikedTracksAsync(cancellationToken);
 
             if (tracks.Items == null)
@@ -97,9 +115,17 @@ namespace HomeHub.Web.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [Route("spotify/genres/detailed")]
-        public async Task<ActionResult> SpotifyGenresWithSongs()
+        [Route("genres/detailed")]
+        public async Task<ActionResult> SpotifyGenresWithSongsAsync()
         {
+            if (!spotifySorter.Active)
+            {
+                return Ok(new
+                {
+                    Error = "SpotifySorter is currently offline. Please use activation request to start the service."
+                });
+            }
+
             // Todo -> Add ability to sort by specific song/genres?
             logger.LogInformation("Received Genres request.");
 
@@ -107,10 +133,16 @@ namespace HomeHub.Web.Controllers
             var token = await spotifyContext.Tokens.FirstOrDefaultAsync();
             var resultList = new List<DescriptiveGenresDto>();
 
+            if (spotifySorter.Api == null || token == null)
+            {
+                return Ok(new
+                {
+                    Error = "SpotifySorter API Does not exist. Authentication may be required."
+                });
+            }
+
             spotifySorter.Api.GenerateApi(token.TokenType, token.AccessToken);
 
-            // TODO -> Make a standalone re-authentication method without relying on potentially uncreated .Auth
-            // In theory, this will never be an issue, because the background service is always running.
             var tracks = await spotifySorter.GetUserLikedTracksAsync(cancellationToken);
 
             if (tracks.Items == null)
@@ -131,6 +163,51 @@ namespace HomeHub.Web.Controllers
             }
 
             return Ok(resultList);
+        }
+
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [Route("status/")]
+        public async Task<ActionResult> GetSpotifyStatusAsync()
+        {
+            try
+            {
+                StatusUpdateDto status = new StatusUpdateDto()
+                {
+                    Status = spotifySorter.Active
+                };
+
+                return Ok(status);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e);
+            }
+        }
+
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [Route("status/toggle")]
+        public async Task<ActionResult> ToggleSorterAsync()
+        {
+            try
+            {
+                bool newStatus = !spotifySorter.Active;
+                spotifySorter.Active = newStatus;
+                StatusUpdateDto status = new StatusUpdateDto()
+                {
+                    Status = newStatus
+                };
+
+                return Ok(status);
+            }
+            catch (Exception e)
+            {
+                // Going to throw the whole error because I'm the only one using this.
+                return BadRequest(e);
+            }
         }
     }
 }
