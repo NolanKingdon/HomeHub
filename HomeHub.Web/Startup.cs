@@ -1,6 +1,7 @@
 using System.Net;
 using HomeHub.SpotifySort.Extensions;
 using HomeHub.Web.Configuration;
+using HomeHub.Web.Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -68,6 +69,7 @@ namespace HomeHub.Web
             }
 
             // Configuring App.
+            app.UseMiddleware<IpAuthenticationMiddleware>(Configuration["ipAccess:whitelist"]);
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
