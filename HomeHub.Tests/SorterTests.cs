@@ -25,7 +25,6 @@ namespace HomeHub.Tests
     public class SorterTests
     {
         readonly IFixture fixture;
-        readonly SorterController controller;
 
         public SorterTests()
         {
