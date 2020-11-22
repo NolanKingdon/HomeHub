@@ -50,7 +50,7 @@ namespace HomeHub.Web.Controllers
 
             if (!spotifySorter.Active)
             {
-                return Ok(new
+                return Ok(new ErrorDto
                 {
                     Error = "SpotifySorter is currently offline. Please use activation request to start the service."
                 });
@@ -62,7 +62,7 @@ namespace HomeHub.Web.Controllers
 
             if (spotifySorter.Api == null || token == null)
             {
-                return Ok(new
+                return Ok(new ErrorDto
                 {
                     Error = "SpotifySorter API Does not exist. Authentication may be required."
                 });
@@ -135,7 +135,7 @@ namespace HomeHub.Web.Controllers
 
             if (spotifySorter.Api == null || token == null)
             {
-                return Ok(new
+                return Ok(new ErrorDto
                 {
                     Error = "SpotifySorter API Does not exist. Authentication may be required."
                 });
