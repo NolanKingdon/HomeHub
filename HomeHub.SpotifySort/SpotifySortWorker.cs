@@ -74,27 +74,32 @@ namespace HomeHub.SpotifySort
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (!sorter.IsAuthenticated)
+            // Sorter must be activated via api.
+            logger.LogInformation($"Sorter is active: {sorter.Active}");
+            if (sorter.Active)
             {
-                logger.LogInformation("Running authentication process.");
-                await sorter.AuthenticateUserAsync(authOptions.ClientId,
-                                                   authOptions.ClientSecret,
-                                                   localIp,
-                                                   semaphore,
-                                                   cancellationToken);
-                await sorter.RunSortAsync(semaphore, cancellationToken);
-            }
-            else
-            {
-                if(sorter.Token.IsExpired())
+                if (!sorter.IsAuthenticated)
                 {
-                    await sorter.RunTokenRefreshAsync(cancellationToken);
+                    logger.LogInformation("Running authentication process.");
+                    await sorter.AuthenticateUserAsync(authOptions.ClientId,
+                                                    authOptions.ClientSecret,
+                                                    localIp,
+                                                    semaphore,
+                                                    cancellationToken);
+                    await sorter.RunSortAsync(semaphore, cancellationToken);
+                }
+                else
+                {
+                    if(sorter.Token.IsExpired())
+                    {
+                        await sorter.RunTokenRefreshAsync(cancellationToken);
+                    }
+
+                    await sorter.RunSortAsync(semaphore, cancellationToken);
                 }
 
-                await sorter.RunSortAsync(semaphore, cancellationToken);
+                logger.LogInformation($"Sort successful! {DateTime.Now}");
             }
-
-            logger.LogInformation($"Sort successful! {DateTime.Now}");
         }
     }
 }

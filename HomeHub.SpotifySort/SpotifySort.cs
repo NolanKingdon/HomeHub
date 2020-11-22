@@ -34,6 +34,7 @@ namespace HomeHub.SpotifySort
         private readonly IServiceScopeFactory scopeFactory;
         private readonly IContextProvider contextProvider;
         public SemaphoreSlim RequestSemaphore { get; }
+        public bool Active { get; set; }
 
         public SpotifySorter(
             ILogger<SpotifySorter> logger,
