@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeHub.Tests", "HomeHub.Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeHub.SpotifySort", "HomeHub.SpotifySort\HomeHub.SpotifySort.csproj", "{7B82A42C-A62A-41F8-9A56-FBD87EF95B8F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeHub.SystemUtils", "HomeHub.SystemUtils\HomeHub.SystemUtils.csproj", "{A9AF8C17-2D2B-4241-954E-5B1212B55160}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -106,5 +108,17 @@ Global
 		{7B82A42C-A62A-41F8-9A56-FBD87EF95B8F}.Release|x64.Build.0 = Release|Any CPU
 		{7B82A42C-A62A-41F8-9A56-FBD87EF95B8F}.Release|x86.ActiveCfg = Release|Any CPU
 		{7B82A42C-A62A-41F8-9A56-FBD87EF95B8F}.Release|x86.Build.0 = Release|Any CPU
+		{A9AF8C17-2D2B-4241-954E-5B1212B55160}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9AF8C17-2D2B-4241-954E-5B1212B55160}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9AF8C17-2D2B-4241-954E-5B1212B55160}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A9AF8C17-2D2B-4241-954E-5B1212B55160}.Debug|x64.Build.0 = Debug|Any CPU
+		{A9AF8C17-2D2B-4241-954E-5B1212B55160}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A9AF8C17-2D2B-4241-954E-5B1212B55160}.Debug|x86.Build.0 = Debug|Any CPU
+		{A9AF8C17-2D2B-4241-954E-5B1212B55160}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9AF8C17-2D2B-4241-954E-5B1212B55160}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9AF8C17-2D2B-4241-954E-5B1212B55160}.Release|x64.ActiveCfg = Release|Any CPU
+		{A9AF8C17-2D2B-4241-954E-5B1212B55160}.Release|x64.Build.0 = Release|Any CPU
+		{A9AF8C17-2D2B-4241-954E-5B1212B55160}.Release|x86.ActiveCfg = Release|Any CPU
+		{A9AF8C17-2D2B-4241-954E-5B1212B55160}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
