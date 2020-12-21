@@ -14,6 +14,10 @@ Levereges [Serilog](https://serilog.net/) for local logging and the [Serilog Ema
 
 ## Projects
 
+### HomeHub.SystemUtils
+- Class Library used for interacting with the OS itself
+- Allows user to get reads of the system temperature
+
 ### HomeHub.SpotifySort
 - Runs as a background service.
 - Periodically polls Spotify to sort liked songs into predefined playlists by genre.
@@ -26,17 +30,10 @@ Levereges [Serilog](https://serilog.net/) for local logging and the [Serilog Ema
 
 ## Future Projects
 
-### Temperature Services (TODO)
-- Will exist as a way to poll RaspberryPi's system temperature.
-- Will be used to determine if the Pi's fan has failed or the temperatures are dangerously high.
-
 ### File Services (TODO)
 - Will exist as a way to download files via API POST call.
 
-### Api
-- Interact with Spotify Service to collect genres of unsorted songs
-- Get Temps
+### Api (TODO)
 - Future Arduinos
 - Download helper (VPN)
-- Get logs?
-- (Actual Documentation Coming Soon)
+- Get logs
