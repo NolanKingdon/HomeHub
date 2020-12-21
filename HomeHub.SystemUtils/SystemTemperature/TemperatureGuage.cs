@@ -1,7 +1,16 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using HomeHub.SystemUtils.Configuration;
+using HomeHub.SystemUtils.Models;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.Internal;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace HomeHub.SystemUtils.SystemTemperature
@@ -13,42 +22,65 @@ namespace HomeHub.SystemUtils.SystemTemperature
     public class TemperatureGuage : ITemperatureGuage
     {
         private TemperatureOptions options;
-        public TemperatureGuage(IOptions<TemperatureOptions> options)
+        private ILogger<TemperatureGuage> logger;
+
+        public TemperatureGuage(IOptions<TemperatureOptions> options,
+                                ILogger<TemperatureGuage> logger)
         {
             this.options = options.Value;
+            this.logger = logger;
         }
 
-        public async Task<double> GetSystemTemperatureAsync()
+        public async Task<TemperatureResult> GetSystemTemperatureAsync()
         {
             double output;
-            // Create process and return result as a double.
+            string stdOut;
+            TemperatureResult result = new TemperatureResult {Unit = options.Unit.ToString()};
 
-            using (Process process = new Process())
+            try
             {
-                // Configuration of the new process.
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.FileName = options.CommandFile;
-                process.StartInfo.CreateNoWindow = true;
-                process.StartInfo.RedirectStandardError = true;
-                process.StartInfo.RedirectStandardOutput = true;
+                using (Process process = new Process())
+                {
+                    logger.LogInformation("Starting Temperature read process");
+                    // Configuration of the new process.
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.FileName = options.CommandInterface;
+                    process.StartInfo.Arguments = options.CommandArgs;
+                    process.StartInfo.CreateNoWindow = true;
+                    process.StartInfo.RedirectStandardOutput = true;
 
-                // Start process.
-                process.Start();
+                    // Start process.
+                    process.Start();
 
-                // Collect the output.
-                output = Double.Parse(await process.StandardOutput.ReadToEndAsync());
-                process.WaitForExit();
+                    // Command returns \r\n at the end. We don't need that. 
+                    stdOut = Regex.Match(await process.StandardOutput.ReadToEndAsync(), @"\d+").Value;
+
+                    // Collect the output.
+                    output = Double.Parse(stdOut);
+                    process.WaitForExit();
+                }
+
+                switch (options.Unit)
+                {
+                    default:
+                    case Temperature.Celcius:
+                        result.Temperature = ConvertTemperature(output);
+                        break;
+                    case Temperature.Fahrenheit:
+                        result.Temperature = CelciusToFahrenheit(output);
+                        break;
+                    case Temperature.Kelvin:
+                        result.Temperature = CelciusToKelvin(output);
+                        break;
+                }
+                logger.LogInformation($"Temperature read successful, returning temperature - {result.Temperature} degrees {result.Unit} ");
+                return result;
             }
-
-            switch (options.Unit)
+            catch (OverflowException e)
             {
-                default:
-                case Temperature.Celcius:
-                    return ConvertTemperature(output);
-                case Temperature.Fahrenheit:
-                    return CelciusToFahrenheit(output);
-                case Temperature.Kelvin:
-                    return CelciusToKelvin(output);
+                // Bubble up exception after catching it here.
+                logger.LogError(e, "Overflow when converting terminal result to double");
+                throw;
             }
         }
 
