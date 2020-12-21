@@ -64,13 +64,13 @@ namespace HomeHub.SystemUtils.SystemTemperature
                 {
                     default:
                     case Temperature.Celcius:
-                        result.Temperature = ConvertTemperature(output);
+                        result.Temperature = TemperatureConverter.ConvertSystemTempToCelcius(output);
                         break;
                     case Temperature.Fahrenheit:
-                        result.Temperature = CelciusToFahrenheit(output);
+                        result.Temperature = TemperatureConverter.CelciusToFahrenheit(output);
                         break;
                     case Temperature.Kelvin:
-                        result.Temperature = CelciusToKelvin(output);
+                        result.Temperature = TemperatureConverter.CelciusToKelvin(output);
                         break;
                 }
                 logger.LogInformation($"Temperature read successful, returning temperature - {result.Temperature} degrees {result.Unit} ");
@@ -82,28 +82,6 @@ namespace HomeHub.SystemUtils.SystemTemperature
                 logger.LogError(e, "Overflow when converting terminal result to double");
                 throw;
             }
-        }
-
-        /// <summary>
-        /// Converts the temperature read into Celcius. The temperature seems to come to us as C + E3
-        ///     IE -> 20.0E3 -> 20000
-        /// </summary>
-        /// <returns>double - celcius conversion</returns>
-        private double ConvertTemperature(double systemTemp)
-        {
-            return systemTemp / 1000;
-        }
-
-        private double CelciusToFahrenheit(double systemTemp)
-        {
-            double celcius = ConvertTemperature(systemTemp);
-            return (celcius * (9/5)) + 32;
-        }
-
-        private double CelciusToKelvin(double systemTemp)
-        {
-            double celcius = ConvertTemperature(systemTemp);
-            return celcius + 273.15;
         }
     }
 }
