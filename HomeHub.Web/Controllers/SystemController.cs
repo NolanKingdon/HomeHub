@@ -1,6 +1,12 @@
+using System;
+using System.Threading.Tasks;
+using HomeHub.SystemUtils.Configuration;
+using HomeHub.SystemUtils.Models;
+using HomeHub.SystemUtils.SystemTemperature;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace HomeHub.Web.Controllers
 {
@@ -10,30 +16,43 @@ namespace HomeHub.Web.Controllers
     public class SystemController : ControllerBase
     {
         private readonly ILogger<SystemController> logger;
+        private readonly ITemperatureGuage temperatureGuage;
+        private readonly TemperatureOptions temperatureOptions;
 
-        public SystemController(ILogger<SystemController> logger)
+        public SystemController(ILogger<SystemController> logger,
+                                ITemperatureGuage temperatureGuage,
+                                IOptions<TemperatureOptions> temperatureOptions)
         {
             this.logger = logger;
+            this.temperatureGuage = temperatureGuage;
+            this.temperatureOptions = temperatureOptions.Value;
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [Route("status/temperature")]
-        public ActionResult SystemTemperature()
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [Route("temperature")]
+        public async Task<ActionResult> SystemTemperatureAsync()
         {
             logger.LogInformation("Received Temps request.");
 
-            return Ok(new
+            try
             {
-                Result = "Success"
-            });
+                TemperatureResult temperature = await temperatureGuage.GetSystemTemperatureAsync();
+                string unit = temperatureOptions.Unit.ToString();
+
+                return Ok(temperature);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e);
+            }
         }
 
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [Route("system/vpn/{action}")]
+        [Route("vpn/{action}")]
         public ActionResult ActivateVpn(bool? activate)
         {
             switch(activate)

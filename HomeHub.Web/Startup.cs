@@ -1,5 +1,6 @@
 using System.Net;
 using HomeHub.SpotifySort.Extensions;
+using HomeHub.SystemUtils.Extensions;
 using HomeHub.Web.Configuration;
 using HomeHub.Web.Middleware;
 using Microsoft.AspNetCore.Builder;
@@ -52,6 +53,7 @@ namespace HomeHub.Web
         {
             services.AddControllersWithViews();
             services.UseSpotifySorterBackgroundService(Configuration);
+            services.UseTemperatureUtil(Configuration);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
