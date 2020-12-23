@@ -7,20 +7,20 @@ namespace HomeHub.SystemUtils.SystemTemperature
         ///     IE -> 20.0E3 -> 20000
         /// </summary>
         /// <returns>double - celcius conversion</returns>
-        public static double ConvertSystemTempToCelcius(double systemTemp)
+        public static double SystemTempToCelcius(double systemTemp)
         {
             return systemTemp / 1000;
         }
 
-        public static double CelciusToFahrenheit(double systemTemp)
+        public static double SystemTempToFahrenheit(double systemTemp)
         {
-            double celcius = ConvertSystemTempToCelcius(systemTemp);
+            double celcius = SystemTempToCelcius(systemTemp);
             return (celcius * 9/5) + 32;
         }
 
-        public static double CelciusToKelvin(double systemTemp)
+        public static double SystemTempToKelvin(double systemTemp)
         {
-            double celcius = ConvertSystemTempToCelcius(systemTemp);
+            double celcius = SystemTempToCelcius(systemTemp);
             return celcius + 273.15;
         }
     }

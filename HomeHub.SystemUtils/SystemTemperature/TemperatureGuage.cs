@@ -21,8 +21,8 @@ namespace HomeHub.SystemUtils.SystemTemperature
     /// </summary>
     public class TemperatureGuage : ITemperatureGuage
     {
-        private TemperatureOptions options;
-        private ILogger<TemperatureGuage> logger;
+        private readonly TemperatureOptions options;
+        private readonly ILogger<TemperatureGuage> logger;
 
         public TemperatureGuage(IOptions<TemperatureOptions> options,
                                 ILogger<TemperatureGuage> logger)
@@ -64,13 +64,13 @@ namespace HomeHub.SystemUtils.SystemTemperature
                 {
                     default:
                     case Temperature.Celcius:
-                        result.Temperature = TemperatureConverter.ConvertSystemTempToCelcius(output);
+                        result.Temperature = TemperatureConverter.SystemTempToCelcius(output);
                         break;
                     case Temperature.Fahrenheit:
-                        result.Temperature = TemperatureConverter.CelciusToFahrenheit(output);
+                        result.Temperature = TemperatureConverter.SystemTempToFahrenheit(output);
                         break;
                     case Temperature.Kelvin:
-                        result.Temperature = TemperatureConverter.CelciusToKelvin(output);
+                        result.Temperature = TemperatureConverter.SystemTempToKelvin(output);
                         break;
                 }
                 logger.LogInformation($"Temperature read successful, returning temperature - {result.Temperature} degrees {result.Unit} ");

@@ -14,7 +14,7 @@ namespace HomeHub.Tests
 {
     public class SystemControllerTests
     {
-        readonly IFixture fixture;
+        private readonly IFixture fixture;
 
         public SystemControllerTests()
         {
@@ -25,8 +25,14 @@ namespace HomeHub.Tests
             fixture.Customize(new AutoMoqCustomization());
         }
 
-        // TemperatureGuage Tests.
+        // -- Temperature Tests --
 
+        /// <summary>
+        /// Happy Path for testing the proper functionality of the temperature guage.
+        /// </summary>
+        /// <param name="unit">Unit to convert to</param>
+        /// <param name="input">System temperature read</param>
+        /// <param name="expected">Expected result based on input</param>
         [Theory]
         [InlineData(Temperature.Celcius, 40000, 40)]
         [InlineData(Temperature.Fahrenheit, 40000, 104)]

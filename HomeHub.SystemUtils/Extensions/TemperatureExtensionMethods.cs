@@ -10,11 +10,11 @@ namespace HomeHub.SystemUtils.Extensions
         public static IServiceCollection UseTemperatureUtil(this IServiceCollection services,
                                                             IConfiguration configuration)
         {
-            // Options
+            // Options.
             services.AddOptions<TemperatureOptions>()
                     .Bind(configuration.GetSection("TemperatureGuage"));
 
-            // DI
+            // DI.
             services.AddSingleton<ITemperatureGuage, TemperatureGuage>();
 
             return services;

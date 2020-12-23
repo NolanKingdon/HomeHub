@@ -7,7 +7,7 @@ namespace HomeHub.Tests.Customizations.System.TemperatureGuage
 {
     public class TemperatureOptionsCustomization : ICustomization
     {
-        private Temperature unit;
+        private readonly Temperature unit;
 
         public TemperatureOptionsCustomization(Temperature unit = 0)
         {

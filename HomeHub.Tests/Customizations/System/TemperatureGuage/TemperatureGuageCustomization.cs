@@ -20,9 +20,9 @@ namespace HomeHub.Tests.Customizations.System.TemperatureGuage
         {
             return unit switch
             {
-                Temperature.Fahrenheit => TemperatureConverter.CelciusToFahrenheit(returnValue),
-                Temperature.Kelvin => TemperatureConverter.CelciusToKelvin(returnValue),
-                _ => TemperatureConverter.ConvertSystemTempToCelcius(returnValue),
+                Temperature.Fahrenheit => TemperatureConverter.SystemTempToFahrenheit(returnValue),
+                Temperature.Kelvin => TemperatureConverter.SystemTempToKelvin(returnValue),
+                _ => TemperatureConverter.SystemTempToCelcius(returnValue),
             };
         }
 
