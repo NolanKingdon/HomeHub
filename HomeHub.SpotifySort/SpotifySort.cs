@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -54,10 +55,10 @@ namespace HomeHub.SpotifySort
         public async Task AuthenticateUserAsync(string clientId,
                                                 string clientSecret,
                                                 string localIp,
-                                                SemaphoreSlim mainTaskSemaphore,
+                                                SemaphoreSlim semaphore,
                                                 CancellationToken cancellationToken)
         {
-            await mainTaskSemaphore.WaitAsync();
+            await semaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
             logger.LogInformation("Starting authentication process.");
 
@@ -111,7 +112,7 @@ namespace HomeHub.SpotifySort
                 // Denotes that we can refresh the token in the future.
                 IsAuthenticated = true;
 
-                mainTaskSemaphore.Release();
+                semaphore.Release();
             };
 
             // Starts to listen using the auth endpoint.
@@ -170,9 +171,9 @@ namespace HomeHub.SpotifySort
             }
         }
 
-        public async Task RunSortAsync(SemaphoreSlim mainTaskSemaphore, CancellationToken cancellationToken)
+        public async Task RunSortAsync(SemaphoreSlim semaphore, CancellationToken cancellationToken)
         {
-            await mainTaskSemaphore.WaitAsync();
+            await semaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
             await UpdateTokensAsync(cancellationToken);
             Api.GenerateApi(Token.TokenType, Token.AccessToken);
@@ -181,7 +182,7 @@ namespace HomeHub.SpotifySort
             ConcurrentDictionary<string, string> playlistDescriptions = new ConcurrentDictionary<string, string>();
 
             // Stores the PlaylistID/SongID relation for the multi call back to the API.
-            ConcurrentDictionary<string, List<string>> playlistNewSongs = new ConcurrentDictionary<string, List<string>>();
+            ConcurrentDictionary<string, Collection<string>> playlistNewSongs = new ConcurrentDictionary<string, Collection<string>>();
             List<Task> tasks = new List<Task>();
             var playlists = GetUserPlaylistsAsync(cancellationToken);
             var likedSongs = GetUserLikedTracksAsync(cancellationToken);
@@ -192,7 +193,7 @@ namespace HomeHub.SpotifySort
             foreach(var playlist in playlists.Result.Items)
             {
                 playlistDescriptions[playlist.Id] = await GetPlaylistDescriptionsAsync(playlist.Id, cancellationToken);
-                playlistNewSongs[playlist.Id] = new List<string>();
+                playlistNewSongs[playlist.Id] = new Collection<string>();
             }
 
             // Leveraging implicit conversion in this iteration to save on iterations elsewhere.
@@ -211,7 +212,7 @@ namespace HomeHub.SpotifySort
 
             // Multicall for adding to playlists/removing from liked.
             await MoveNewSongsIntoPlaylistsAsync(playlistNewSongs, cancellationToken);
-            mainTaskSemaphore.Release();
+            semaphore.Release();
         }
 
         private async Task<Paging<SimplePlaylist>> GetUserPlaylistsAsync(CancellationToken cancellationToken)
@@ -266,7 +267,7 @@ namespace HomeHub.SpotifySort
         {
             await RequestSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
-            List<string> genres = new List<string>();
+            Collection<string> genres = new();
 
             foreach(var artist in genreTrack.Track.Artists)
             {
@@ -278,7 +279,9 @@ namespace HomeHub.SpotifySort
 
                 if (fullArtist.Genres != null)
                 {
-                    genres = genres.Concat(fullArtist.Genres).ToList();
+                    // There was some weird behavior with using IEnumerable here where Linq's ConcatNIterator couldn't
+                    // be cast into a collection when assigning back to genreTracks. This will have to do for the meantime.
+                    genres = new Collection<string>(genres.Concat(fullArtist.Genres).ToList());
                 }
             }
 
@@ -292,7 +295,7 @@ namespace HomeHub.SpotifySort
         private async Task AddSongsToGenreDictionaryAsync(
             SavedTrackWithGenre genreTrack,
             ConcurrentDictionary<string, string> genreIdDict,
-            ConcurrentDictionary<string, List<string>> newSongsDict,
+            ConcurrentDictionary<string, Collection<string>> newSongsDict,
             CancellationToken cancellationToken)
         {
             await RequestSemaphore.WaitAsync();
@@ -315,23 +318,29 @@ namespace HomeHub.SpotifySort
         }
 
         private async Task MoveNewSongsIntoPlaylistsAsync(
-            ConcurrentDictionary<string, List<string>> newPlaylistSongsDict,
+            ConcurrentDictionary<string, Collection<string>> newPlaylistSongsDict,
             CancellationToken cancellationToken)
         {
             await RequestSemaphore.WaitAsync();
             cancellationToken.ThrowIfCancellationRequested();
             List<Task> tasks = new List<Task>();
-            List<string> unlikeList = new List<string>();
 
-            foreach(KeyValuePair<string, List<string>> entry in newPlaylistSongsDict)
+            // Wanted to change this to Collection<>, but was getting some issues with the unlikeList concat.
+            Collection<string> unlikeList = new Collection<string>();
+
+            foreach(KeyValuePair<string, Collection<string>> entry in newPlaylistSongsDict)
             {
                 logger.LogInformation($"Moving tracks to playlist: {entry.Key}");
                 tasks.Add(Api.AddPlaylistTracksAsync(entry.Key, entry.Value));
-                unlikeList = unlikeList.Concat(entry.Value).ToList();
+
+                // Concat returns an IEnumerable, which for some reason can't be put into a collection.
+                unlikeList = new Collection<string>(unlikeList.Concat(entry.Value).ToList());
             }
 
             await Task.WhenAll(tasks);
             logger.LogInformation("Unliking moved songs.");
+
+            // Casting back to Collection due to needing to use an IEnumerable earlier.
             await Api.RemoveSavedTracksAsync(unlikeList);
             RequestSemaphore.Release();
         }
