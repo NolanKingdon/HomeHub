@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using SpotifyAPI.Web.Models;
 
@@ -12,7 +13,7 @@ namespace HomeHub.SpotifySort
         Task<Paging<SavedTrack>> GetSavedTracksAsync(int maxSongResults);
         Task<FullPlaylist> GetPlaylistAsync(string playlistId);
         Task<FullArtist> GetArtistAsync(string artistId);
-        Task<ErrorResponse> AddPlaylistTracksAsync(string playlistId, List<string> tracks);
-        Task<ErrorResponse> RemoveSavedTracksAsync(List<string> unlikeList);
+        Task<ErrorResponse> AddPlaylistTracksAsync(string playlistId, Collection<string> tracks);
+        Task<ErrorResponse> RemoveSavedTracksAsync(Collection<string> unlikeList);
     }
 }

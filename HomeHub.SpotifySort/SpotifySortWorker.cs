@@ -37,16 +37,16 @@ namespace HomeHub.SpotifySort
             this.scopeFactory = scopeFactory;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            while (!cancellationToken.IsCancellationRequested)
+            while (!stoppingToken.IsCancellationRequested)
             {
                 if(semaphore.CurrentCount == 1)
                 {
                     logger.LogInformation("Running SpotifySortWorker - {time}", DateTimeOffset.Now);
                     try
                     {
-                        await RunSorterAsync(cancellationToken);
+                        await RunSorterAsync(stoppingToken);
                     }
                     catch(OperationCanceledException)
                     {
@@ -66,7 +66,7 @@ namespace HomeHub.SpotifySort
                     logger.LogInformation("Previous task did not complete.");
                 }
 
-                await Task.Delay(sortOptions.Interval, cancellationToken);
+                await Task.Delay(sortOptions.Interval, stoppingToken);
             }
         }
 
