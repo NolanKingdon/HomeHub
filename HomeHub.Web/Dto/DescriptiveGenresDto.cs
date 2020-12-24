@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace HomeHub.Web.Dto
 {
@@ -6,6 +7,6 @@ namespace HomeHub.Web.Dto
     {
         public string Artist { get; set; }
         public string SongName { get; set; }
-        public List<string> Genres { get; set; }
+        public Collection<string> Genres { get; set; }
     }
 }

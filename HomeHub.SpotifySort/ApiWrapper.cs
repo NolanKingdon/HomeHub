@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Models;
@@ -20,9 +22,9 @@ namespace HomeHub.SpotifySort
                 AccessToken = accessToken
             };
         }
-        public Task<ErrorResponse> AddPlaylistTracksAsync(string playlistId, List<string> tracks)
+        public Task<ErrorResponse> AddPlaylistTracksAsync(string playlistId, Collection<string> tracks)
         {
-            return api.AddPlaylistTracksAsync(playlistId, tracks);
+            return api.AddPlaylistTracksAsync(playlistId, tracks.ToList());
         }
 
         public Task<FullArtist> GetArtistAsync(string artistId)
@@ -50,9 +52,9 @@ namespace HomeHub.SpotifySort
             return api.GetUserPlaylistsAsync(userId, maxPlaylistResults);
         }
 
-        public Task<ErrorResponse> RemoveSavedTracksAsync(List<string> unlikeList)
+        public Task<ErrorResponse> RemoveSavedTracksAsync(Collection<string> unlikeList)
         {
-            return api.RemoveSavedTracksAsync(unlikeList);
+            return api.RemoveSavedTracksAsync(unlikeList.ToList());
         }
     }
 }

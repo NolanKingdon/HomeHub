@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using SpotifyAPI.Web.Models;
 
 namespace HomeHub.SpotifySort
@@ -13,13 +14,13 @@ namespace HomeHub.SpotifySort
     /// </summary>
     public class SavedTrackWithGenre
     {
-        public List<string> Genres { get; set; }
+        public Collection<string> Genres { get; set; }
         public DateTime AddedAt { get; set; }
         public FullTrack Track { get; set; }
 
         public SavedTrackWithGenre(SavedTrack track)
         {
-            Genres = new List<string>();
+            Genres = new Collection<string>();
             AddedAt = track.AddedAt;
             Track = track.Track;
         }

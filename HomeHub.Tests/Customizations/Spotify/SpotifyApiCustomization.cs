@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using AutoFixture;
 using HomeHub.SpotifySort;
@@ -37,11 +38,11 @@ namespace HomeHub.Tests.Customizations.Spotify
                .ReturnsAsync( () => fixture.Create<FullArtist>());
 
             // Move songs - Error Unused.
-            api.Setup( a => a.AddPlaylistTracksAsync(It.IsAny<string>(), It.IsAny<List<string>>()))
+            api.Setup( a => a.AddPlaylistTracksAsync(It.IsAny<string>(), It.IsAny<Collection<string>>()))
                .ReturnsAsync(() => fixture.Create<ErrorResponse>());
 
             // Delete Songs - Error Unused.
-            api.Setup( a => a.RemoveSavedTracksAsync(It.IsAny<List<string>>()))
+            api.Setup( a => a.RemoveSavedTracksAsync(It.IsAny<Collection<string>>()))
                .ReturnsAsync(() => fixture.Create<ErrorResponse>());
         }
     }

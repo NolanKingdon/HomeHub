@@ -14,6 +14,7 @@ using SpotifyAPI.Web.Models;
 using System.Linq;
 using MockQueryable.Moq;
 using Microsoft.Extensions.DependencyInjection;
+using System.Collections.ObjectModel;
 
 namespace HomeHub.Tests
 {
@@ -132,8 +133,8 @@ namespace HomeHub.Tests
             var options = fixture.Create<SpotifySortOptions>();
 
             await sort.RunSortAsync(semaphore, token);
-            api.Verify( a => a.AddPlaylistTracksAsync(It.IsAny<string>(), It.IsAny<List<string>>()), Times.AtLeastOnce);
-            api.Verify( a => a.RemoveSavedTracksAsync(It.IsAny<List<string>>()), Times.Once);
+            api.Verify( a => a.AddPlaylistTracksAsync(It.IsAny<string>(), It.IsAny<Collection<string>>()), Times.AtLeastOnce);
+            api.Verify( a => a.RemoveSavedTracksAsync(It.IsAny<Collection<string>>()), Times.Once);
         }
     }
 }
