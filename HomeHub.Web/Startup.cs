@@ -53,7 +53,7 @@ namespace HomeHub.Web
         {
             services.AddControllersWithViews();
             services.UseSpotifySorterBackgroundService(Configuration);
-            services.UseTemperatureUtil(Configuration);
+            services.UseSystemUtils(Configuration);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
