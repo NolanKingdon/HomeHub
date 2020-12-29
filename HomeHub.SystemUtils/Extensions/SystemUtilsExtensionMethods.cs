@@ -1,21 +1,27 @@
 using HomeHub.SystemUtils.Configuration;
+using HomeHub.SystemUtils.SystemStorage;
 using HomeHub.SystemUtils.SystemTemperature;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HomeHub.SystemUtils.Extensions
 {
-    public static class TemperatureExtensionMethods
+    public static class SystemUtilsExtensionMethods
     {
-        public static IServiceCollection UseTemperatureUtil(this IServiceCollection services,
+        public static IServiceCollection UseSystemUtils(this IServiceCollection services,
                                                             IConfiguration configuration)
         {
-            // Options.
+            // Temperature
             services.AddOptions<TemperatureOptions>()
                     .Bind(configuration.GetSection("TemperatureGuage"));
 
-            // DI.
             services.AddSingleton<ITemperatureGuage, TemperatureGuage>();
+
+            // System Storage
+            services.AddOptions<StorageOptions>()
+                    .Bind(configuration.GetSection("SystemStorage"));
+
+            services.AddScoped<ISystemStore, StorageHelper>();
 
             return services;
         }
