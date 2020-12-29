@@ -63,6 +63,7 @@ namespace HomeHub.SystemUtils.SystemTemperature
                         result.Temperature = SystemConverter.SystemTempToKelvin(output);
                         break;
                 }
+
                 logger.LogInformation($"Temperature read successful, returning temperature - {result.Temperature} degrees {result.Unit} ");
                 return result;
             }

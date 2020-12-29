@@ -43,7 +43,6 @@ namespace HomeHub.Tests.Customizations.System.Storage
                 StorageResult result = fixture.Create<StorageResult>();
                 result.Unit = unit;
                 result.TotalSpace = totalSpace;
-
                 results.Add(result);
             }
 
@@ -52,13 +51,14 @@ namespace HomeHub.Tests.Customizations.System.Storage
 
         public void Customize(IFixture fixture)
         {
+            // Number of results we want to generate for the getAll call.
             const int resultNumber = 5;
-
             var storageMock = fixture.Freeze<Mock<ISystemStore>>();
 
             storageMock.Setup( ss => ss.GetAllStorageSpaceAsync())
                        .ReturnsAsync(GenerateStorageResults(fixture, resultNumber, unit, input));
 
+            // Generating from a single drive will always return 1.
             storageMock.Setup( ss => ss.GetStorageOfDrive(It.IsAny<string>()))
                        .ReturnsAsync(GenerateStorageResults(fixture, 1, unit, input));
         }
