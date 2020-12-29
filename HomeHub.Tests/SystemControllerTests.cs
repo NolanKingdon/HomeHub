@@ -1,9 +1,12 @@
 using System;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using AutoFixture;
 using AutoFixture.AutoMoq;
 using HomeHub.SystemUtils.Models;
+using HomeHub.SystemUtils.SystemStorage;
 using HomeHub.SystemUtils.SystemTemperature;
+using HomeHub.Tests.Customizations.System.Storage;
 using HomeHub.Tests.Customizations.System.TemperatureGuage;
 using HomeHub.Web.Controllers;
 using Microsoft.AspNetCore.Mvc;
@@ -77,5 +80,53 @@ namespace HomeHub.Tests
             BadRequestObjectResult badResult = (BadRequestObjectResult)result;
             Assert.IsType<Exception>(badResult.Value);
         }
+
+        // --- Storage Tests ---
+
+        [Theory]
+        [InlineData(StorageUnit.Byte, 10000000000, 10000000000)]
+        [InlineData(StorageUnit.Kilobyte, 10000000000, 10000000)]
+        [InlineData(StorageUnit.Megabyte, 10000000000, 10000)]
+        [InlineData(StorageUnit.Gigabyte, 10000000000, 10)]
+        [InlineData(StorageUnit.Terabyte, 10000000000, 0.01)]
+        public async Task GetStorageAllTestAsync(StorageUnit unit, double input, double expected)
+        {
+            fixture.Customize(new SystemStorageCustomization(unit, input));
+            SystemController mockController = fixture.Build<SystemController>()
+                                                     .OmitAutoProperties()
+                                                     .Create();
+
+            Collection<StorageResult> result = await mockController.GetAllStorageSpacesAsync();
+
+            // Value at time of writing was 5. Should always be more than 1.
+            Assert.True(result.Count > 1);
+
+            // Doesn't matter the result. Set up so they're all the same.
+            Assert.Equal(expected, result[0].TotalSpace);
+        }
+
+        [Theory]
+        [InlineData(StorageUnit.Byte, 10000000000, 10000000000)]
+        [InlineData(StorageUnit.Kilobyte, 10000000000, 10000000)]
+        [InlineData(StorageUnit.Megabyte, 10000000000, 10000)]
+        [InlineData(StorageUnit.Gigabyte, 10000000000, 10)]
+        [InlineData(StorageUnit.Terabyte, 10000000000, 0.01)]
+        public async Task GetStorageDriveTestAsync(StorageUnit unit, double input, double expected)
+        {
+            const string drive = "sda/dev1";
+            fixture.Customize(new SystemStorageCustomization(unit, input));
+            SystemController mockController = fixture.Build<SystemController>()
+                                                     .OmitAutoProperties()
+                                                     .Create();
+
+            Collection<StorageResult> result = await mockController.GetStorageDriveAsync(drive);
+
+            // Value at time of writing was 5. Should always be more than 1.
+            Assert.Single(result);
+            Assert.Equal(expected, result[0].TotalSpace);
+        }
+
+        // TODO -> Once we have more confidence in the raw output from the QTerminal, should do tests for
+        // the interaction of the SystemStorage class and the SystemProcess.
     }
 }
