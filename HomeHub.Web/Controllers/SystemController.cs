@@ -1,7 +1,9 @@
 using System;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using HomeHub.SystemUtils.Configuration;
 using HomeHub.SystemUtils.Models;
+using HomeHub.SystemUtils.SystemStorage;
 using HomeHub.SystemUtils.SystemTemperature;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -17,14 +19,17 @@ namespace HomeHub.Web.Controllers
     {
         private readonly ILogger<SystemController> logger;
         private readonly ITemperatureGuage temperatureGuage;
+        private readonly ISystemStore storageHelper;
         private readonly TemperatureOptions temperatureOptions;
 
         public SystemController(ILogger<SystemController> logger,
                                 ITemperatureGuage temperatureGuage,
+                                ISystemStore storageHelper,
                                 IOptions<TemperatureOptions> temperatureOptions)
         {
             this.logger = logger;
             this.temperatureGuage = temperatureGuage;
+            this.storageHelper = storageHelper;
             this.temperatureOptions = temperatureOptions.Value;
         }
 
@@ -47,6 +52,30 @@ namespace HomeHub.Web.Controllers
             {
                 return BadRequest(e);
             }
+        }
+
+        // System Temperature Endpoints
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [Route("storage/")]
+        [Route("storage/all")]
+        public Task<Collection<StorageResult>> GetAllStorageSpacesAsync()
+        {
+            logger.LogInformation("Request Received for Storage spaces.");
+            return storageHelper.GetAllStorageSpaceAsync();
+        }
+
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [Route("storage/{path}")]
+        public Task<Collection<StorageResult>> GetStorageDriveAsync(string drive)
+        {
+            logger.LogInformation($"Space Request Received for {drive}");
+
+            // TODO -> Ensure giving it nothing returns nothing. I think this is handled in QTerminal with the
+            // df command, but will need to verify.
+            return storageHelper.GetStorageOfDrive(drive);
         }
 
         [HttpPost]
