@@ -1,6 +1,6 @@
 namespace HomeHub.SystemUtils.SystemTemperature
 {
-    public static class TemperatureConverter
+    public static class SystemConverter
     {
         /// <summary>
         /// Converts the temperature read into Celcius. The temperature seems to come to us as C + E3
@@ -22,6 +22,26 @@ namespace HomeHub.SystemUtils.SystemTemperature
         {
             double celcius = SystemTempToCelcius(systemTemp);
             return celcius + 273.15;
+        }
+
+        public static double BytesToKilobytes(double bytes)
+        {
+            return bytes / 1000;
+        }
+
+        public static double BytesToMegabytes(double bytes)
+        {
+            return BytesToKilobytes(bytes) / 1000;
+        }
+
+        public static double BytesToGigabytes(double bytes)
+        {
+            return BytesToMegabytes(bytes) / 1000;
+        }
+
+        public static double BytesToTerabytes(double bytes)
+        {
+            return BytesToGigabytes(bytes) / 1000;
         }
     }
 }

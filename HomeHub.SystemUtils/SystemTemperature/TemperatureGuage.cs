@@ -39,40 +39,31 @@ namespace HomeHub.SystemUtils.SystemTemperature
 
             try
             {
-                using (Process process = new Process())
+                using (SystemProcess process = new())
                 {
                     logger.LogInformation("Starting Temperature read process");
-                    // Configuration of the new process.
-                    process.StartInfo.UseShellExecute = false;
-                    process.StartInfo.FileName = options.CommandInterface;
-                    process.StartInfo.Arguments = options.CommandArgs;
-                    process.StartInfo.CreateNoWindow = true;
-                    process.StartInfo.RedirectStandardOutput = true;
-
-                    // Start process.
-                    process.Start();
 
                     // Command returns \r\n at the end. We don't need that. 
-                    stdOut = Regex.Match(await process.StandardOutput.ReadToEndAsync(), @"\d+").Value;
+                    stdOut = Regex.Match(await process.RunCommand(options.CommandInterface, options.CommandArgs), @"\d+").Value;
 
                     // Collect the output.
                     output = Double.Parse(stdOut);
-                    process.WaitForExit();
                 }
 
                 switch (options.Unit)
                 {
                     default:
                     case Temperature.Celcius:
-                        result.Temperature = TemperatureConverter.SystemTempToCelcius(output);
+                        result.Temperature = SystemConverter.SystemTempToCelcius(output);
                         break;
                     case Temperature.Fahrenheit:
-                        result.Temperature = TemperatureConverter.SystemTempToFahrenheit(output);
+                        result.Temperature = SystemConverter.SystemTempToFahrenheit(output);
                         break;
                     case Temperature.Kelvin:
-                        result.Temperature = TemperatureConverter.SystemTempToKelvin(output);
+                        result.Temperature = SystemConverter.SystemTempToKelvin(output);
                         break;
                 }
+
                 logger.LogInformation($"Temperature read successful, returning temperature - {result.Temperature} degrees {result.Unit} ");
                 return result;
             }
