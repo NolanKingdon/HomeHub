@@ -11,12 +11,12 @@ namespace HomeHub.SystemUtils.SystemStorage
     /// <summary>
     /// Linux only at the moment.
     /// </summary>
-    public class SystemStorage
+    public class StorageHelper : ISystemStore
     {
-        private readonly ILogger<SystemStorage> logger;
+        private readonly ILogger<StorageHelper> logger;
         private readonly StorageOptions options;
 
-        public SystemStorage(ILogger<SystemStorage> logger, IOptions<StorageOptions> options)
+        public StorageHelper(ILogger<StorageHelper> logger, IOptions<StorageOptions> options)
         {
             this.logger = logger;
             this.options = options.Value;
