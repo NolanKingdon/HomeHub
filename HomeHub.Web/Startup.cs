@@ -72,7 +72,9 @@ namespace HomeHub.Web
 
             // Configuring App.
             app.UseMiddleware<IpAuthenticationMiddleware>(Configuration["ipAccess:whitelist"]);
-            app.UseHttpsRedirection();
+
+            // TODO - get a certificate in here and running properly.
+            // app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
             app.UseAuthorization();
