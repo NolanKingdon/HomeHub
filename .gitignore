@@ -6,3 +6,7 @@ bin/
 
 # Tokens
 secrets.json
+
+# Arduino Sensitive Information
+WiFiInfo.h
+RouteInfo.h
