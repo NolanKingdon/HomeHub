@@ -54,6 +54,7 @@ namespace HomeHub.Web
             services.AddControllersWithViews();
             services.UseSpotifySorterBackgroundService(Configuration);
             services.UseSystemUtils(Configuration);
+            services.AddSpaStaticFiles(configuration: options => { options.RootPath = "wwwroot/frontend"});
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -81,6 +82,16 @@ namespace HomeHub.Web
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
+            });
+
+            // https://www.freecodecamp.org/news/how-to-build-an-spa-with-vuejs-and-c-using-net-core/
+            app.UseSpaStaticFiles();
+            app.UseSpa(configuration: builder =>
+            {
+                if (env.IsDevelopment())
+                {
+                    builder.UseProxyToSpaDevelopmentServer("http://localhost:8080");
+                }
             });
         }
     }
