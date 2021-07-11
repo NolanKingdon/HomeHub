@@ -1,6 +1,7 @@
 using System;
 using HomeHub.SpotifySort.Configuration;
 using HomeHub.SpotifySort.Database;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -37,7 +38,16 @@ namespace HomeHub.SpotifySort.Extensions
             services = AddAndConfigureClasses(services, configuration);
             services.AddHostedService<SpotifySortWorker>();
 
+            ConfigureSpotifyDatabase();
+
             return services;
+        }
+
+        private static void ConfigureSpotifyDatabase()
+        {
+            // TODO - This is hackey and would be nice to have a static method in SpotifyContext, but it works for now.
+            using SpotifyContext context = new();
+            context.Database.EnsureCreated();
         }
 
         /// <summary>
